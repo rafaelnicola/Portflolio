@@ -16,7 +16,11 @@ Pensada para instalarse en varias PCs (recepción, consultorio del doctor/a) que
 
 ## 1. Preparar el servidor (una sola vez, en una PC)
 
-Requiere tener [Node.js](https://nodejs.org/) instalado (versión 18 o superior).
+Requiere tener [Node.js](https://nodejs.org/) instalado (versión 22.5 o superior; usa el motor de SQLite
+incluido en Node, así que no hace falta instalar compiladores ni herramientas de C++ en ninguna PC).
+
+Al arrancar vas a ver un aviso que dice `ExperimentalWarning: SQLite is an experimental feature...` — es
+normal, no es un error, el servidor funciona igual.
 
 ```bash
 cd server
