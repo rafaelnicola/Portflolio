@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Consultorio</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Configuracion del servidor (primer uso) -->
+  <div id="pantalla-config" class="pantalla-centrada oculto">
+    <div class="tarjeta">
+      <h1>Configurar servidor</h1>
+      <p class="subtitulo">Ingresa la direccion de red del servidor del consultorio (la PC donde corre el backend).</p>
+      <div id="config-error" class="error-msg oculto"></div>
+      <div class="campo">
+        <label>Direccion del servidor</label>
+        <input id="config-url" type="text" placeholder="http://192.168.1.10:4000" />
+      </div>
+      <button id="config-guardar" style="width:100%">Guardar y continuar</button>
+    </div>
+  </div>
+
+  <!-- Login -->
+  <div id="pantalla-login" class="pantalla-centrada oculto">
+    <div class="tarjeta">
+      <h1>Consultorio</h1>
+      <p class="subtitulo">Ingresa tus credenciales para continuar</p>
+      <div id="login-error" class="error-msg oculto"></div>
+      <form id="form-login">
+        <div class="campo">
+          <label>Usuario</label>
+          <input id="login-username" type="text" autocomplete="username" required />
+        </div>
+        <div class="campo">
+          <label>Contraseña</label>
+          <input id="login-password" type="password" autocomplete="current-password" required />
+        </div>
+        <button type="submit" style="width:100%">Ingresar</button>
+      </form>
+      <button id="login-cambiar-servidor" class="secundario" style="width:100%; margin-top:10px;">Cambiar servidor</button>
+    </div>
+  </div>
+
+  <!-- App principal -->
+  <div id="app" class="oculto">
+    <div class="sidebar">
+      <div class="logo">🏥 Consultorio</div>
+      <nav>
+        <button data-vista="dashboard" class="nav-btn activo">Inicio</button>
+        <button data-vista="pacientes" class="nav-btn">Pacientes</button>
+        <button data-vista="turnos" class="nav-btn">Agenda</button>
+        <button data-vista="usuarios" class="nav-btn oculto" id="nav-usuarios">Usuarios</button>
+      </nav>
+      <div class="usuario-info">
+        <div class="nombre" id="info-nombre"></div>
+        <div id="info-rol"></div>
+        <button id="btn-logout" class="secundario">Cerrar sesion</button>
+      </div>
+    </div>
+
+    <div class="contenido">
+      <!-- Dashboard -->
+      <section id="vista-dashboard" class="vista">
+        <h2>Inicio</h2>
+        <div class="dashboard-tarjetas">
+          <div class="dashboard-tarjeta">
+            <div class="numero" id="dash-turnos-hoy">-</div>
+            <div class="etiqueta">Turnos de hoy</div>
+          </div>
+          <div class="dashboard-tarjeta">
+            <div class="numero" id="dash-pacientes">-</div>
+            <div class="etiqueta">Pacientes registrados</div>
+          </div>
+        </div>
+        <h3>Turnos de hoy</h3>
+        <div id="dash-tabla-turnos"></div>
+      </section>
+
+      <!-- Pacientes -->
+      <section id="vista-pacientes" class="vista oculto">
+        <div class="barra-superior">
+          <h2 style="margin:0">Pacientes</h2>
+          <div style="display:flex; gap:8px;">
+            <input id="pacientes-buscar" type="text" placeholder="Buscar por nombre, apellido o DNI..." />
+            <button id="btn-nuevo-paciente">+ Nuevo paciente</button>
+          </div>
+        </div>
+        <div id="pacientes-tabla"></div>
+      </section>
+
+      <!-- Turnos / Agenda -->
+      <section id="vista-turnos" class="vista oculto">
+        <div class="barra-superior">
+          <h2 style="margin:0">Agenda</h2>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input id="turnos-fecha" type="date" />
+            <button id="btn-nuevo-turno">+ Nuevo turno</button>
+          </div>
+        </div>
+        <div id="turnos-tabla"></div>
+      </section>
+
+      <!-- Usuarios (admin) -->
+      <section id="vista-usuarios" class="vista oculto">
+        <div class="barra-superior">
+          <h2 style="margin:0">Usuarios</h2>
+          <button id="btn-nuevo-usuario">+ Nuevo usuario</button>
+        </div>
+        <div id="usuarios-tabla"></div>
+      </section>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
