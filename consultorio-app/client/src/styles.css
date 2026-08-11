@@ -157,9 +157,11 @@ td.acciones button { padding: 5px 10px; font-size: 12px; }
   background: white;
   box-shadow: -6px 0 24px rgba(0,0,0,0.15);
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 24px;
   z-index: 50;
 }
+.panel-lateral * { overflow-wrap: break-word; word-break: break-word; }
 .panel-lateral h2 { margin-top: 0; }
 .panel-lateral .cerrar { float: right; }
 

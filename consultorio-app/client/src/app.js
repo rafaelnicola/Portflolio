@@ -297,7 +297,6 @@ async function abrirFichaPaciente(id) {
       <div class="tabs">
         <button class="tab-btn activo" data-tab="datos">Datos</button>
         ${puedeClinica ? '<button class="tab-btn" data-tab="clinica">Historia clinica</button>' : ''}
-        ${puedeClinica ? '<button class="tab-btn" data-tab="recetas">Recetas</button>' : ''}
         ${puedeTratamientos ? '<button class="tab-btn" data-tab="tratamientos">Tratamientos</button>' : ''}
       </div>
       <div id="tab-datos" class="tab-contenido">
@@ -311,7 +310,6 @@ async function abrirFichaPaciente(id) {
         <button class="secundario" id="btn-editar-paciente">Editar datos</button>
       </div>
       ${puedeClinica ? `<div id="tab-clinica" class="tab-contenido oculto"></div>` : ''}
-      ${puedeClinica ? `<div id="tab-recetas" class="tab-contenido oculto"></div>` : ''}
       ${puedeTratamientos ? `<div id="tab-tratamientos" class="tab-contenido oculto"></div>` : ''}
     `);
 
@@ -326,7 +324,6 @@ async function abrirFichaPaciente(id) {
 
     if (puedeClinica) {
       cargarHistoriaClinica(paciente.id);
-      cargarRecetas(paciente.id);
     }
     if (puedeTratamientos) {
       cargarTratamientosResumen(paciente.id);
@@ -452,63 +449,6 @@ async function abrirFormEnviarEmail(historiaId, pacienteId) {
       await Api.post(`/api/historias/${historiaId}/enviar-email`, datos);
       toast('Email enviado', 'exito');
       cerrarPanel();
-    } catch (err) {
-      toast(err.message, 'error');
-    }
-  });
-}
-
-/* ---------- Recetas ---------- */
-
-async function cargarRecetas(pacienteId) {
-  const cont = $('#tab-recetas');
-  if (!cont) return;
-  try {
-    const recetas = await Api.get(`/api/recetas/paciente/${pacienteId}`);
-    cont.innerHTML = `
-      <button id="btn-nueva-receta">+ Nueva receta</button>
-      <div style="margin-top:14px">
-        ${
-          recetas.length
-            ? recetas
-                .map(
-                  (r) => `
-              <div class="tarjeta-registro">
-                <div class="fecha">${escapeHtml(r.fecha)}</div>
-                <div><strong>Medicamentos:</strong> ${escapeHtml(r.medicamentos)}</div>
-                ${r.indicaciones ? `<div><strong>Indicaciones:</strong> ${escapeHtml(r.indicaciones)}</div>` : ''}
-                <div class="doctor">Dr./Dra. ${escapeHtml(r.doctor_nombre) || '-'}</div>
-              </div>`
-                )
-                .join('')
-            : '<div class="vacio">Sin recetas registradas.</div>'
-        }
-      </div>
-    `;
-    $('#btn-nueva-receta').addEventListener('click', () => abrirFormReceta(pacienteId));
-  } catch (e) {
-    toast(e.message, 'error');
-  }
-}
-
-function abrirFormReceta(pacienteId) {
-  abrirPanel(`
-    <button class="secundario cerrar" onclick="cerrarPanel()">Cerrar</button>
-    <h2>Nueva receta</h2>
-    <form id="form-receta">
-      <div class="campo"><label>Medicamentos</label><textarea name="medicamentos" required placeholder="Ej: Amoxicilina 500mg cada 8hs por 7 dias"></textarea></div>
-      <div class="campo"><label>Indicaciones</label><textarea name="indicaciones"></textarea></div>
-      <button type="submit" style="width:100%">Guardar receta</button>
-    </form>
-  `);
-  $('#form-receta').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const datos = Object.fromEntries(new FormData(e.target).entries());
-    datos.paciente_id = pacienteId;
-    try {
-      await Api.post('/api/recetas', datos);
-      toast('Receta guardada', 'exito');
-      abrirFichaPaciente(pacienteId);
     } catch (err) {
       toast(err.message, 'error');
     }

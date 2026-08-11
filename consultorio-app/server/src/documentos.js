@@ -10,6 +10,7 @@ const {
   TableCell,
   WidthType,
   BorderStyle,
+  PageOrientation,
   convertInchesToTwip,
 } = require('docx');
 
@@ -93,6 +94,7 @@ async function generarDocxTratamiento(historia, paciente) {
         properties: {
           page: {
             size: {
+              orientation: PageOrientation.LANDSCAPE,
               width: convertInchesToTwip(5.5),
               height: convertInchesToTwip(8.5),
             },

@@ -1,6 +1,7 @@
 # Sistema de gestión para el consultorio
 
-App de escritorio para consultorios médicos: pacientes, agenda de turnos, historia clínica y recetas.
+App de escritorio para consultorios médicos: pacientes, agenda de turnos e historia clínica (con el
+tratamiento/fórmula médica como parte de la misma consulta, sin duplicarlo en un modulo aparte).
 Pensada para instalarse en varias PCs (recepción, consultorio del doctor/a) que comparten los datos a través de la red local.
 
 ## Cómo funciona
@@ -153,7 +154,7 @@ generar documentos **Word (.docx)**, editables e imprimibles:
 
 - **Exportar a Word**: la historia clínica completa de una consulta (doctor/a y admin).
 - **Exportar tratamiento (media carta)**: solo el tratamiento, en una página de tamaño media carta
-  (5.5" x 8.5"), lista para imprimir como fórmula médica (todos los roles).
+  horizontal (8.5" x 5.5"), lista para imprimir como fórmula médica (todos los roles).
 - **Enviar por email**: envía la historia clínica completa como adjunto Word al email que indiques
   (doctor/a y admin; requiere configurar el correo primero, ver más abajo).
 - **Descargar lista (Word)**, en la Agenda: exporta la lista de turnos del día seleccionado, con nombre y

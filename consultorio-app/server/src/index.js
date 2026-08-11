@@ -8,7 +8,6 @@ const usuariosRouter = require('./routes/usuarios');
 const pacientesRouter = require('./routes/pacientes');
 const turnosRouter = require('./routes/turnos');
 const historiasRouter = require('./routes/historias');
-const recetasRouter = require('./routes/recetas');
 const configRouter = require('./routes/config');
 
 const app = express();
@@ -21,7 +20,6 @@ app.use('/api/usuarios', usuariosRouter);
 app.use('/api/pacientes', pacientesRouter);
 app.use('/api/turnos', turnosRouter);
 app.use('/api/historias', historiasRouter);
-app.use('/api/recetas', recetasRouter);
 app.use('/api/config', configRouter);
 
 app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));

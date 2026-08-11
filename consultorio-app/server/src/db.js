@@ -69,21 +69,9 @@ CREATE TABLE IF NOT EXISTS configuracion (
   valor TEXT
 );
 
-CREATE TABLE IF NOT EXISTS recetas (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  paciente_id INTEGER NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
-  historia_id INTEGER REFERENCES historias_clinicas(id) ON DELETE SET NULL,
-  doctor_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
-  fecha TEXT NOT NULL DEFAULT (datetime('now')),
-  medicamentos TEXT NOT NULL,
-  indicaciones TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
 CREATE INDEX IF NOT EXISTS idx_turnos_fecha ON turnos(fecha);
 CREATE INDEX IF NOT EXISTS idx_turnos_paciente ON turnos(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_historias_paciente ON historias_clinicas(paciente_id);
-CREATE INDEX IF NOT EXISTS idx_recetas_paciente ON recetas(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_pacientes_apellido ON pacientes(apellido);
 `);
 
