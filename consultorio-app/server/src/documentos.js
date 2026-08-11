@@ -1,8 +1,11 @@
+const path = require('path');
+const fs = require('fs');
 const {
   Document,
   Packer,
   Paragraph,
   TextRun,
+  ImageRun,
   HeadingLevel,
   AlignmentType,
   Table,
@@ -13,6 +16,24 @@ const {
   PageOrientation,
   convertInchesToTwip,
 } = require('docx');
+
+// Proporcion real del archivo assets/logo.png (ancho x alto en px)
+const LOGO_PROPORCION = 888 / 776;
+const LOGO_BUFFER = fs.readFileSync(path.join(__dirname, 'assets', 'logo.png'));
+
+function encabezadoLogo(anchoPx) {
+  return new Paragraph({
+    alignment: AlignmentType.CENTER,
+    spacing: { after: 200 },
+    children: [
+      new ImageRun({
+        data: LOGO_BUFFER,
+        type: 'png',
+        transformation: { width: anchoPx, height: Math.round(anchoPx / LOGO_PROPORCION) },
+      }),
+    ],
+  });
+}
 
 const BORDE_TABLA = {
   top: { style: BorderStyle.SINGLE, size: 2, color: 'CCCCCC' },
@@ -65,6 +86,7 @@ async function generarDocxHistoria(historia, paciente) {
           page: { margin: { top: 720, bottom: 720, left: 900, right: 900 } },
         },
         children: [
+          encabezadoLogo(150),
           new Paragraph({
             text: 'Historia clínica',
             heading: HeadingLevel.HEADING_1,
@@ -111,6 +133,7 @@ async function generarDocxTratamiento(historia, paciente) {
           },
         },
         children: [
+          encabezadoLogo(110),
           new Paragraph({
             text: 'Fórmula médica',
             heading: HeadingLevel.HEADING_2,
@@ -124,10 +147,6 @@ async function generarDocxTratamiento(historia, paciente) {
           new Paragraph({ text: ' ' }),
           new Paragraph({ text: 'Tratamiento', heading: HeadingLevel.HEADING_3 }),
           new Paragraph({ text: historia.tratamiento && historia.tratamiento.trim() ? historia.tratamiento : '-' }),
-          new Paragraph({ text: ' ' }),
-          new Paragraph({ text: ' ' }),
-          new Paragraph({ text: '_______________________________', alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: 'Firma y sello', alignment: AlignmentType.CENTER }),
         ],
       },
     ],
