@@ -613,16 +613,29 @@ function adjuntarEventosUsuarios() {
     });
   });
   $$('[data-resetpass]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const nueva = prompt('Ingresa la nueva contraseña para este usuario:');
-      if (!nueva) return;
-      try {
-        await Api.put(`/api/usuarios/${btn.dataset.resetpass}/password`, { password_nuevo: nueva });
-        toast('Contraseña actualizada', 'exito');
-      } catch (e) {
-        toast(e.message, 'error');
-      }
-    });
+    btn.addEventListener('click', () => abrirFormResetPassword(btn.dataset.resetpass));
+  });
+}
+
+function abrirFormResetPassword(usuarioId) {
+  abrirPanel(`
+    <button class="secundario cerrar" onclick="cerrarPanel()">Cerrar</button>
+    <h2>Restablecer contraseña</h2>
+    <form id="form-reset-password">
+      <div class="campo"><label>Nueva contraseña</label><input type="password" name="password_nuevo" required minlength="4" /></div>
+      <button type="submit" style="width:100%">Guardar</button>
+    </form>
+  `);
+  $('#form-reset-password').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const datos = Object.fromEntries(new FormData(e.target).entries());
+    try {
+      await Api.put(`/api/usuarios/${usuarioId}/password`, datos);
+      toast('Contraseña actualizada', 'exito');
+      cerrarPanel();
+    } catch (err) {
+      toast(err.message, 'error');
+    }
   });
 }
 
