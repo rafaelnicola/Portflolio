@@ -13,6 +13,15 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+// La historia clinica guarda h.fecha en UTC (datetime('now') de SQLite);
+// esta funcion la muestra convertida a la hora local de la PC.
+function formatearFecha(fechaUtcTexto) {
+  if (!fechaUtcTexto) return '-';
+  const fecha = new Date(`${fechaUtcTexto.replace(' ', 'T')}Z`);
+  if (Number.isNaN(fecha.getTime())) return fechaUtcTexto;
+  return fecha.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+}
+
 function mostrarPantalla(id) {
   ['pantalla-config', 'pantalla-login', 'app'].forEach((otro) => {
     $(`#${otro}`).classList.toggle('oculto', otro !== id);
@@ -350,7 +359,7 @@ async function cargarHistoriaClinica(pacienteId) {
                 .map(
                   (h) => `
               <div class="tarjeta-registro">
-                <div class="fecha">${escapeHtml(h.fecha)} ${h.editable ? '' : '<span style="color:#a12b2b; font-weight:600;">· Bloqueada (mas de 48hs)</span>'}</div>
+                <div class="fecha">${escapeHtml(formatearFecha(h.fecha))} ${h.editable ? '' : '<span style="color:#a12b2b; font-weight:600;">· Bloqueada (mas de 48hs)</span>'}</div>
                 <div><strong>Motivo:</strong> ${escapeHtml(h.motivo_consulta) || '-'}</div>
                 <div><strong>Presion arterial:</strong> ${escapeHtml(h.presion_arterial) || '-'}</div>
                 <div><strong>Peso:</strong> ${escapeHtml(h.peso) || '-'}</div>
@@ -410,7 +419,7 @@ function abrirFormHistoria(pacienteId, historiaExistente) {
     <p style="color:#667">
       ${
         esEdicion
-          ? `Fecha y hora: <strong>${escapeHtml(historiaExistente.fecha)}</strong> (no se puede modificar; se puede editar hasta 48hs despues de creada)`
+          ? `Fecha y hora: <strong>${escapeHtml(formatearFecha(historiaExistente.fecha))}</strong> (no se puede modificar; se puede editar hasta 48hs despues de creada)`
           : `Fecha y hora: <strong>${escapeHtml(ahora)}</strong> (se registra automaticamente)`
       }
     </p>
@@ -489,7 +498,7 @@ async function cargarTratamientosResumen(pacienteId) {
               .map(
                 (t) => `
             <div class="tarjeta-registro">
-              <div class="fecha">${escapeHtml(t.fecha)}</div>
+              <div class="fecha">${escapeHtml(formatearFecha(t.fecha))}</div>
               <div><strong>Tratamiento:</strong> ${escapeHtml(t.tratamiento)}</div>
               <div class="doctor">Dr./Dra. ${escapeHtml(t.doctor_nombre) || '-'}</div>
               <div style="margin-top:10px;">

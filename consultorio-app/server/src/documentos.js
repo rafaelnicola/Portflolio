@@ -34,6 +34,15 @@ function celda(texto, { encabezado = false, ancho } = {}) {
   });
 }
 
+// h.fecha se guarda en UTC (datetime('now') de SQLite); se muestra convertida
+// a la hora local de esta PC (la del servidor).
+function formatearFecha(fechaUtcTexto) {
+  if (!fechaUtcTexto) return '-';
+  const fecha = new Date(`${fechaUtcTexto.replace(' ', 'T')}Z`);
+  if (Number.isNaN(fecha.getTime())) return fechaUtcTexto;
+  return fecha.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+}
+
 function campo(etiqueta, valor) {
   return new Paragraph({
     spacing: { after: 160 },
@@ -72,7 +81,7 @@ async function generarDocxHistoria(historia, paciente) {
           campo('Teléfono', paciente.telefono),
           new Paragraph({ text: ' ' }),
           new Paragraph({ text: 'Consulta', heading: HeadingLevel.HEADING_2 }),
-          campo('Fecha y hora', historia.fecha),
+          campo('Fecha y hora', formatearFecha(historia.fecha)),
           campo('Doctor/a', historia.doctor_nombre),
           campo('Motivo de consulta', historia.motivo_consulta),
           campo('Presión arterial', historia.presion_arterial),
@@ -110,7 +119,7 @@ async function generarDocxTratamiento(historia, paciente) {
           new Paragraph({ text: ' ' }),
           campo('Paciente', nombrePaciente(paciente)),
           campo('DNI', paciente.dni),
-          campo('Fecha y hora', historia.fecha),
+          campo('Fecha y hora', formatearFecha(historia.fecha)),
           campo('Doctor/a', historia.doctor_nombre),
           new Paragraph({ text: ' ' }),
           new Paragraph({ text: 'Tratamiento', heading: HeadingLevel.HEADING_3 }),
