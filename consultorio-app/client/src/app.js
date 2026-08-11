@@ -340,6 +340,7 @@ async function cargarHistoriaClinica(pacienteId) {
   if (!cont) return;
   try {
     const historias = await Api.get(`/api/historias/paciente/${pacienteId}`);
+    const historiasPorId = new Map(historias.map((h) => [String(h.id), h]));
     cont.innerHTML = `
       <button id="btn-nueva-historia">+ Nueva valoracion</button>
       <div style="margin-top:14px">
@@ -349,7 +350,7 @@ async function cargarHistoriaClinica(pacienteId) {
                 .map(
                   (h) => `
               <div class="tarjeta-registro">
-                <div class="fecha">${escapeHtml(h.fecha)}</div>
+                <div class="fecha">${escapeHtml(h.fecha)} ${h.editable ? '' : '<span style="color:#a12b2b; font-weight:600;">· Bloqueada (mas de 48hs)</span>'}</div>
                 <div><strong>Motivo:</strong> ${escapeHtml(h.motivo_consulta) || '-'}</div>
                 <div><strong>Presion arterial:</strong> ${escapeHtml(h.presion_arterial) || '-'}</div>
                 <div><strong>Peso:</strong> ${escapeHtml(h.peso) || '-'}</div>
@@ -358,6 +359,7 @@ async function cargarHistoriaClinica(pacienteId) {
                 ${h.observaciones ? `<div><strong>Observaciones:</strong> ${escapeHtml(h.observaciones)}</div>` : ''}
                 <div class="doctor">Dr./Dra. ${escapeHtml(h.doctor_nombre) || '-'}</div>
                 <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
+                  ${h.editable ? `<button class="secundario" data-editar-historia="${h.id}">Editar</button>` : ''}
                   <button class="secundario" data-exportar-historia="${h.id}">Exportar a Word</button>
                   <button class="secundario" data-exportar-tratamiento="${h.id}">Exportar tratamiento (media carta)</button>
                   <button class="secundario" data-email-historia="${h.id}">Enviar por email</button>
@@ -370,6 +372,11 @@ async function cargarHistoriaClinica(pacienteId) {
       </div>
     `;
     $('#btn-nueva-historia').addEventListener('click', () => abrirFormHistoria(pacienteId));
+    $$('#tab-clinica [data-editar-historia]').forEach((btn) => {
+      btn.addEventListener('click', () =>
+        abrirFormHistoria(pacienteId, historiasPorId.get(btn.dataset.editarHistoria))
+      );
+    });
     $$('#tab-clinica [data-exportar-historia]').forEach((btn) => {
       btn.addEventListener('click', () =>
         descargarDocumento(
@@ -394,31 +401,43 @@ async function cargarHistoriaClinica(pacienteId) {
   }
 }
 
-function abrirFormHistoria(pacienteId) {
+function abrirFormHistoria(pacienteId, historiaExistente) {
+  const esEdicion = !!historiaExistente;
   const ahora = new Date().toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
   abrirPanel(`
     <button class="secundario cerrar" onclick="cerrarPanel()">Cerrar</button>
-    <h2>Nueva valoracion</h2>
-    <p style="color:#667">Fecha y hora: <strong>${escapeHtml(ahora)}</strong> (se registra automaticamente)</p>
+    <h2>${esEdicion ? 'Editar valoracion' : 'Nueva valoracion'}</h2>
+    <p style="color:#667">
+      ${
+        esEdicion
+          ? `Fecha y hora: <strong>${escapeHtml(historiaExistente.fecha)}</strong> (no se puede modificar; se puede editar hasta 48hs despues de creada)`
+          : `Fecha y hora: <strong>${escapeHtml(ahora)}</strong> (se registra automaticamente)`
+      }
+    </p>
     <form id="form-historia">
-      <div class="campo"><label>Motivo de consulta</label><textarea name="motivo_consulta"></textarea></div>
+      <div class="campo"><label>Motivo de consulta</label><textarea name="motivo_consulta">${escapeHtml(historiaExistente?.motivo_consulta)}</textarea></div>
       <div class="grid-2">
-        <div class="campo"><label>Presion arterial</label><input name="presion_arterial" placeholder="Ej: 120/80" /></div>
-        <div class="campo"><label>Peso</label><input name="peso" placeholder="Ej: 70kg" /></div>
+        <div class="campo"><label>Presion arterial</label><input name="presion_arterial" placeholder="Ej: 120/80" value="${escapeHtml(historiaExistente?.presion_arterial)}" /></div>
+        <div class="campo"><label>Peso</label><input name="peso" placeholder="Ej: 70kg" value="${escapeHtml(historiaExistente?.peso)}" /></div>
       </div>
-      <div class="campo"><label>Diagnostico</label><textarea name="diagnostico"></textarea></div>
-      <div class="campo"><label>Tratamiento</label><textarea name="tratamiento"></textarea></div>
-      <div class="campo"><label>Observaciones</label><textarea name="observaciones"></textarea></div>
-      <button type="submit" style="width:100%">Guardar</button>
+      <div class="campo"><label>Diagnostico</label><textarea name="diagnostico">${escapeHtml(historiaExistente?.diagnostico)}</textarea></div>
+      <div class="campo"><label>Tratamiento</label><textarea name="tratamiento">${escapeHtml(historiaExistente?.tratamiento)}</textarea></div>
+      <div class="campo"><label>Observaciones</label><textarea name="observaciones">${escapeHtml(historiaExistente?.observaciones)}</textarea></div>
+      <button type="submit" style="width:100%">${esEdicion ? 'Guardar cambios' : 'Guardar'}</button>
     </form>
   `);
   $('#form-historia').addEventListener('submit', async (e) => {
     e.preventDefault();
     const datos = Object.fromEntries(new FormData(e.target).entries());
-    datos.paciente_id = pacienteId;
     try {
-      await Api.post('/api/historias', datos);
-      toast('Consulta guardada', 'exito');
+      if (esEdicion) {
+        await Api.put(`/api/historias/${historiaExistente.id}`, datos);
+        toast('Valoracion actualizada', 'exito');
+      } else {
+        datos.paciente_id = pacienteId;
+        await Api.post('/api/historias', datos);
+        toast('Consulta guardada', 'exito');
+      }
       abrirFichaPaciente(pacienteId);
     } catch (err) {
       toast(err.message, 'error');
@@ -583,6 +602,59 @@ function adjuntarEventosTurnos() {
   });
 }
 
+function configurarBuscadorPaciente({ inputBuscar, inputId, resultadosDiv }) {
+  let debounceId = null;
+
+  function ocultarResultados() {
+    resultadosDiv.classList.add('oculto');
+    resultadosDiv.innerHTML = '';
+  }
+
+  inputBuscar.addEventListener('input', () => {
+    inputId.value = '';
+    clearTimeout(debounceId);
+    const q = inputBuscar.value.trim();
+    if (!q) {
+      ocultarResultados();
+      return;
+    }
+    debounceId = setTimeout(async () => {
+      try {
+        const pacientes = await Api.get(`/api/pacientes?q=${encodeURIComponent(q)}`);
+        if (!pacientes.length) {
+          resultadosDiv.innerHTML = '<div class="resultado-item vacio">Sin resultados</div>';
+        } else {
+          resultadosDiv.innerHTML = pacientes
+            .slice(0, 20)
+            .map(
+              (p) => `
+              <div class="resultado-item" data-id="${p.id}" data-nombre="${escapeHtml(p.apellido)}, ${escapeHtml(p.nombre)}">
+                <strong>${escapeHtml(p.apellido)}, ${escapeHtml(p.nombre)}</strong>
+                ${p.dni ? `<span class="resultado-dni">DNI ${escapeHtml(p.dni)}</span>` : ''}
+              </div>`
+            )
+            .join('');
+        }
+        resultadosDiv.classList.remove('oculto');
+      } catch (e) {
+        ocultarResultados();
+      }
+    }, 250);
+  });
+
+  resultadosDiv.addEventListener('mousedown', (e) => {
+    const item = e.target.closest('[data-id]');
+    if (!item) return;
+    inputId.value = item.dataset.id;
+    inputBuscar.value = item.dataset.nombre;
+    ocultarResultados();
+  });
+
+  inputBuscar.addEventListener('blur', () => {
+    setTimeout(ocultarResultados, 150);
+  });
+}
+
 async function abrirFormTurno(turno) {
   const esEdicion = !!turno;
   if (!doctoresCache.length) {
@@ -592,28 +664,17 @@ async function abrirFormTurno(turno) {
       doctoresCache = [];
     }
   }
-  let pacientesOpciones = [];
-  try {
-    pacientesOpciones = await Api.get('/api/pacientes');
-  } catch (e) {
-    pacientesOpciones = [];
-  }
+  const nombrePacienteInicial = turno ? `${turno.paciente_apellido}, ${turno.paciente_nombre}` : '';
 
   abrirPanel(`
     <button class="secundario cerrar" onclick="cerrarPanel()">Cerrar</button>
     <h2>${esEdicion ? 'Editar turno' : 'Nuevo turno'}</h2>
     <form id="form-turno">
-      <div class="campo">
+      <div class="campo buscador-paciente">
         <label>Paciente</label>
-        <select name="paciente_id" required>
-          <option value="">Seleccionar...</option>
-          ${pacientesOpciones
-            .map(
-              (p) =>
-                `<option value="${p.id}" ${turno && turno.paciente_id === p.id ? 'selected' : ''}>${escapeHtml(p.apellido)}, ${escapeHtml(p.nombre)}</option>`
-            )
-            .join('')}
-        </select>
+        <input type="text" id="turno-buscar-paciente" autocomplete="off" placeholder="Escribi nombre, apellido o DNI..." value="${escapeHtml(nombrePacienteInicial)}" required />
+        <input type="hidden" name="paciente_id" id="turno-paciente-id" value="${turno ? turno.paciente_id : ''}" />
+        <div id="turno-resultados-paciente" class="resultados-buscador oculto"></div>
       </div>
       <div class="campo">
         <label>Doctor/a</label>
@@ -636,8 +697,18 @@ async function abrirFormTurno(turno) {
     </form>
   `);
 
+  configurarBuscadorPaciente({
+    inputBuscar: $('#turno-buscar-paciente'),
+    inputId: $('#turno-paciente-id'),
+    resultadosDiv: $('#turno-resultados-paciente'),
+  });
+
   $('#form-turno').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (!$('#turno-paciente-id').value) {
+      toast('Elegi un paciente de la lista de resultados', 'error');
+      return;
+    }
     const datos = Object.fromEntries(new FormData(e.target).entries());
     if (!datos.doctor_id) delete datos.doctor_id;
     try {

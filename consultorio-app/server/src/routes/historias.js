@@ -6,6 +6,8 @@ const { enviarEmailConAdjunto } = require('../mailer');
 
 const router = express.Router();
 
+const HORAS_LIMITE_EDICION = 48;
+
 router.use(requireAuth);
 
 const SELECT_HISTORIA = `
@@ -21,11 +23,21 @@ function obtenerHistoriaConPaciente(id) {
   return { historia, paciente };
 }
 
+function horasTranscurridas(fechaTexto) {
+  // Las fechas se guardan con datetime('now') de SQLite, en UTC y sin sufijo de zona horaria.
+  const fechaUtc = new Date(`${fechaTexto.replace(' ', 'T')}Z`);
+  return (Date.now() - fechaUtc.getTime()) / (1000 * 60 * 60);
+}
+
+function conEditable(historia) {
+  return { ...historia, editable: horasTranscurridas(historia.fecha) <= HORAS_LIMITE_EDICION };
+}
+
 router.get('/paciente/:pacienteId', requireRol('admin', 'doctor'), (req, res) => {
   const historias = db
     .prepare(`${SELECT_HISTORIA} WHERE h.paciente_id = ? ORDER BY h.fecha DESC, h.id DESC`)
     .all(req.params.pacienteId);
-  res.json(historias);
+  res.json(historias.map(conEditable));
 });
 
 // Vista limitada: solo fecha, doctor y tratamiento (sin diagnostico/signos vitales),
@@ -67,8 +79,13 @@ router.post('/', requireRol('admin', 'doctor'), (req, res) => {
 
 router.put('/:id', requireRol('admin', 'doctor'), (req, res) => {
   const { motivo_consulta, presion_arterial, peso, diagnostico, tratamiento, observaciones } = req.body || {};
-  const existente = db.prepare('SELECT id FROM historias_clinicas WHERE id = ?').get(req.params.id);
+  const existente = db.prepare('SELECT id, fecha FROM historias_clinicas WHERE id = ?').get(req.params.id);
   if (!existente) return res.status(404).json({ error: 'Registro no encontrado' });
+  if (horasTranscurridas(existente.fecha) > HORAS_LIMITE_EDICION) {
+    return res.status(403).json({
+      error: `Esta valoracion ya no se puede modificar: pasaron mas de ${HORAS_LIMITE_EDICION} horas desde que se creo. Cargala como una nueva valoracion.`,
+    });
+  }
   db.prepare(
     `UPDATE historias_clinicas
      SET motivo_consulta = ?, presion_arterial = ?, peso = ?, diagnostico = ?, tratamiento = ?, observaciones = ?

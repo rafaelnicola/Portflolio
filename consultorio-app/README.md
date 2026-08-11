@@ -127,9 +127,13 @@ Electron (antivirus, proxy corporativo, etc.), no solo el permiso de npm.
 - **Recepción**: gestiona pacientes, agenda turnos y puede imprimir el tratamiento (fórmula médica) que
   cargó el doctor/a, sin ver el resto de la historia clínica.
 - **Doctor/a**: además de lo anterior, puede crear pacientes, agendar/cancelar turnos, y cargar/editar la
-  historia clínica completa (presión arterial, peso, diagnóstico, tratamiento).
+  historia clínica completa (presión arterial, peso, diagnóstico, tratamiento). Cada valoración se puede
+  editar hasta **48 horas** después de creada; pasado ese plazo queda bloqueada y hay que cargar una nueva.
 - **Admin**: todo lo anterior, y además crea usuarios y les asigna o cambia el rol (Usuarios → seleccionar
   rol en la lista desplegable), y configura el envío de emails (Configuración).
+
+Al agendar un turno, el campo "Paciente" es un buscador (escribí nombre, apellido o DNI) en vez de una
+lista desplegable — pensado para consultorios con muchos pacientes registrados.
 
 ## Roles y permisos
 

@@ -15,8 +15,8 @@
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "com.consultorio.cliente",
-    "productName": "Consultorio",
+    "appId": "com.biomedicalcenter.cliente",
+    "productName": "Biomedical Center",
     "files": [
       "main.js",
       "preload.js",
