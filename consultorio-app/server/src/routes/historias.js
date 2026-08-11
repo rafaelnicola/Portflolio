@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../db');
 const { requireAuth, requireRol } = require('../auth');
 const { generarDocxHistoria, generarDocxTratamiento } = require('../documentos');
+const { generarPdfHistoria } = require('../pdf');
 const { enviarEmailConAdjunto } = require('../mailer');
 
 const router = express.Router();
@@ -141,13 +142,13 @@ router.post('/:id/enviar-email', requireRol('admin', 'doctor'), async (req, res)
   const datos = obtenerHistoriaConPaciente(req.params.id);
   if (!datos) return res.status(404).json({ error: 'Registro no encontrado' });
   try {
-    const buffer = await generarDocxHistoria(datos.historia, datos.paciente);
+    const buffer = await generarPdfHistoria(datos.historia, datos.paciente);
     await enviarEmailConAdjunto({
       destinatario,
       asunto: `Historia clinica - ${datos.paciente.apellido}, ${datos.paciente.nombre}`,
-      texto: 'Se adjunta la historia clinica en formato Word.',
-      nombreArchivo: `historia-clinica-${req.params.id}.docx`,
-      contenido: Buffer.from(buffer),
+      texto: 'Se adjunta la historia clinica en formato PDF.',
+      nombreArchivo: `historia-clinica-${req.params.id}.pdf`,
+      contenido: buffer,
     });
     res.json({ ok: true });
   } catch (err) {
