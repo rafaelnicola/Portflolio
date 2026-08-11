@@ -34,26 +34,11 @@ function conEditable(historia) {
   return { ...historia, editable: horasTranscurridas(historia.fecha) <= HORAS_LIMITE_EDICION };
 }
 
-router.get('/paciente/:pacienteId', requireRol('admin', 'doctor'), (req, res) => {
+router.get('/paciente/:pacienteId', requireRol('admin', 'doctor', 'recepcion'), (req, res) => {
   const historias = db
     .prepare(`${SELECT_HISTORIA} WHERE h.paciente_id = ? ORDER BY h.fecha DESC, h.id DESC`)
     .all(req.params.pacienteId);
   res.json(historias.map(conEditable));
-});
-
-// Vista limitada: solo fecha, doctor y tratamiento (sin diagnostico/signos vitales),
-// para que recepcion pueda imprimir la formula sin ver el resto de la historia clinica.
-router.get('/paciente/:pacienteId/tratamientos', requireRol('admin', 'doctor', 'recepcion'), (req, res) => {
-  const tratamientos = db
-    .prepare(
-      `SELECT h.id, h.fecha, h.tratamiento, u.nombre_completo AS doctor_nombre
-       FROM historias_clinicas h
-       LEFT JOIN usuarios u ON u.id = h.doctor_id
-       WHERE h.paciente_id = ? AND h.tratamiento IS NOT NULL AND TRIM(h.tratamiento) != ''
-       ORDER BY h.fecha DESC, h.id DESC`
-    )
-    .all(req.params.pacienteId);
-  res.json(tratamientos);
 });
 
 router.post('/', requireRol('admin', 'doctor'), (req, res) => {
@@ -108,7 +93,7 @@ router.delete('/:id', requireRol('admin'), (req, res) => {
   res.json({ ok: true });
 });
 
-router.get('/:id/exportar-word', requireRol('admin', 'doctor'), async (req, res) => {
+router.get('/:id/exportar-word', requireRol('admin', 'doctor', 'recepcion'), async (req, res) => {
   const datos = obtenerHistoriaConPaciente(req.params.id);
   if (!datos) return res.status(404).json({ error: 'Registro no encontrado' });
   try {
@@ -136,7 +121,7 @@ router.get('/:id/exportar-tratamiento-word', requireRol('admin', 'doctor', 'rece
   }
 });
 
-router.post('/:id/enviar-email', requireRol('admin', 'doctor'), async (req, res) => {
+router.post('/:id/enviar-email', requireRol('admin', 'doctor', 'recepcion'), async (req, res) => {
   const { destinatario } = req.body || {};
   if (!destinatario) return res.status(400).json({ error: 'Falta el email de destino' });
   const datos = obtenerHistoriaConPaciente(req.params.id);
