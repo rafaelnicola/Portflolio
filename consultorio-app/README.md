@@ -71,6 +71,56 @@ Los instaladores quedan en `client/dist/`. Copiá ese instalador y ejecutalo en 
 La primera vez que se abre la app en cada PC, pide la **dirección del servidor** (la IP que anotaste en el
 paso 1, por ejemplo `http://192.168.1.10:4000`). Después de configurarla una vez, la app la recuerda.
 
+### Problemas comunes al instalar el cliente (Windows)
+
+Si la PC tiene un antivirus corporativo o restricciones de IT, `npm install` puede fallar al instalar
+Electron. Los síntomas y soluciones, en orden:
+
+**1. `npm warn install-scripts ... electron@x.x.x (postinstall: node install.js)` y después
+`Error: Electron failed to install correctly`**
+
+npm bloqueó por seguridad el script que descarga el programa de Electron. Aprobalo y reinstalá:
+```cmd
+npm install-scripts approve electron
+npm install
+```
+
+**2. Sigue el mismo error después de aprobar el script**
+
+El script se aprobó pero no se volvió a ejecutar. Forzalo:
+```cmd
+npm rebuild electron
+```
+Si `node_modules\electron\dist` sigue vacío o solo tiene una carpeta `locales` (podés revisarlo con
+`dir node_modules\electron\dist`), el problema es que algo bloquea la descarga real del instalador de
+Electron (antivirus, proxy corporativo, etc.), no solo el permiso de npm.
+
+**3. La descarga del instalador de Electron está bloqueada (dist vacío o solo con `locales`)**
+
+- Agregá una exclusión de antivirus para la carpeta del proyecto completo (en Windows: Seguridad de
+  Windows → Protección contra virus y amenazas → Administrar configuración → Exclusiones).
+- Borrá la caché de Electron por si quedó una descarga corrupta, y reintentá:
+  ```cmd
+  rmdir /s /q "%LOCALAPPDATA%\electron\Cache"
+  rmdir /s /q node_modules\electron
+  npm install
+  dir node_modules\electron\dist
+  ```
+- Si con eso sigue sin funcionar (típico en PCs de trabajo con software de seguridad adicional que Windows
+  Defender no controla), instalá el archivo a mano:
+  1. Fijate qué versión de Electron figura en `client/package.json` (por ejemplo `31.7.7`) y descargá desde
+     el navegador (no por cmd):
+     `https://github.com/electron/electron/releases/download/vX.X.X/electron-vX.X.X-win32-x64.zip`
+     (reemplazando `X.X.X` por la versión correspondiente).
+  2. Descomprimilo directo dentro de la carpeta que quedó vacía y creá el archivo `path.txt` sin salto de
+     línea al final (usar `echo` lo rompe, por eso se usa PowerShell):
+     ```cmd
+     cd client
+     tar -xf "%USERPROFILE%\Downloads\electron-vX.X.X-win32-x64.zip" -C node_modules\electron\dist
+     powershell -Command "[IO.File]::WriteAllText('node_modules\electron\path.txt','electron.exe')"
+     npm start
+     ```
+
 ## 3. Uso diario
 
 - **Recepción**: gestiona pacientes y la agenda de turnos.
