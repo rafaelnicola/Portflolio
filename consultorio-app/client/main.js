@@ -18,6 +18,7 @@ function createWindow() {
     minWidth: 960,
     minHeight: 640,
     title: 'Biomedical Center',
+    icon: path.join(__dirname, 'src', 'assets', 'logo-mark.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
