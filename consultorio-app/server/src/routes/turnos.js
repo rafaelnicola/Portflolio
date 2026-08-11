@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { requireAuth, requireRol } = require('../auth');
+const { generarDocxAgenda } = require('../documentos');
 
 const router = express.Router();
 
@@ -13,6 +14,21 @@ const SELECT_TURNO = `
   JOIN pacientes p ON p.id = t.paciente_id
   LEFT JOIN usuarios u ON u.id = t.doctor_id
 `;
+
+router.get('/exportar-word', async (req, res) => {
+  const { fecha } = req.query;
+  if (!fecha) return res.status(400).json({ error: 'Falta la fecha' });
+  const turnos = db.prepare(`${SELECT_TURNO} WHERE t.fecha = ? ORDER BY t.hora`).all(fecha);
+  try {
+    const buffer = await generarDocxAgenda(turnos, fecha);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="turnos-${fecha}.docx"`);
+    res.send(Buffer.from(buffer));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'No se pudo generar el documento' });
+  }
+});
 
 router.get('/', (req, res) => {
   const { fecha, doctor_id, paciente_id } = req.query;
@@ -35,7 +51,7 @@ router.get('/', (req, res) => {
   res.json(turnos);
 });
 
-router.post('/', requireRol('admin', 'recepcion'), (req, res) => {
+router.post('/', requireRol('admin', 'recepcion', 'doctor'), (req, res) => {
   const { paciente_id, doctor_id, fecha, hora, motivo } = req.body || {};
   if (!paciente_id || !fecha || !hora) {
     return res.status(400).json({ error: 'Paciente, fecha y hora son requeridos' });
@@ -46,7 +62,7 @@ router.post('/', requireRol('admin', 'recepcion'), (req, res) => {
   res.status(201).json({ id: info.lastInsertRowid });
 });
 
-router.put('/:id', requireRol('admin', 'recepcion'), (req, res) => {
+router.put('/:id', requireRol('admin', 'recepcion', 'doctor'), (req, res) => {
   const { paciente_id, doctor_id, fecha, hora, motivo } = req.body || {};
   const existente = db.prepare('SELECT id FROM turnos WHERE id = ?').get(req.params.id);
   if (!existente) return res.status(404).json({ error: 'Turno no encontrado' });
@@ -65,7 +81,7 @@ router.put('/:id/estado', (req, res) => {
   res.json({ ok: true });
 });
 
-router.delete('/:id', requireRol('admin', 'recepcion'), (req, res) => {
+router.delete('/:id', requireRol('admin', 'recepcion', 'doctor'), (req, res) => {
   db.prepare('DELETE FROM turnos WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });

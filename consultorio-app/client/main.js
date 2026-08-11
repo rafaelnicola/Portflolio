@@ -1,5 +1,6 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const Store = require('electron-store');
 
 const store = new Store({
@@ -31,6 +32,16 @@ ipcMain.handle('config:get-server-url', () => store.get('serverUrl'));
 ipcMain.handle('config:set-server-url', (event, url) => {
   store.set('serverUrl', url);
   return true;
+});
+
+ipcMain.handle('archivo:guardar', async (event, { nombreSugerido, datos }) => {
+  const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+    defaultPath: nombreSugerido,
+    filters: [{ name: 'Documento Word', extensions: ['docx'] }],
+  });
+  if (canceled || !filePath) return { ok: false };
+  fs.writeFileSync(filePath, Buffer.from(datos));
+  return { ok: true, filePath };
 });
 
 app.whenReady().then(createWindow);

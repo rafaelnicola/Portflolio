@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'consultorio-local-secret-cambiar-en-produccion';
+const { JWT_SECRET } = require('./secret');
 
 function generarToken(usuario) {
   return jwt.sign(

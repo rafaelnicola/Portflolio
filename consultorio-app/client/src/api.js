@@ -47,11 +47,32 @@ const Api = (() => {
     return true;
   }
 
+  async function getBinary(path) {
+    const res = await fetch(`${baseUrl}${path}`, {
+      method: 'GET',
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    });
+    if (!res.ok) {
+      let data = null;
+      try {
+        data = await res.json();
+      } catch (e) {
+        data = null;
+      }
+      const err = new Error((data && data.error) || `Error ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
+    const buffer = await res.arrayBuffer();
+    return new Uint8Array(buffer);
+  }
+
   return {
     setBaseUrl,
     setToken,
     getToken,
     healthCheck,
+    getBinary,
     get: (path) => request('GET', path),
     post: (path, body) => request('POST', path, body),
     put: (path, body) => request('PUT', path, body),

@@ -27,6 +27,16 @@ function toast(msg, tipo = 'info') {
   setTimeout(() => el.remove(), 3000);
 }
 
+async function descargarDocumento(path, nombreSugerido) {
+  try {
+    const datos = await Api.getBinary(path);
+    const resultado = await window.archivoAPI.guardar(nombreSugerido, datos);
+    if (resultado.ok) toast('Documento guardado', 'exito');
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
 /* ---------- Panel lateral reutilizable ---------- */
 
 function abrirPanel(html) {
@@ -121,6 +131,7 @@ function iniciarApp() {
   $('#info-nombre').textContent = usuarioActual.nombre_completo;
   $('#info-rol').textContent = etiquetaRol(usuarioActual.rol);
   $('#nav-usuarios').classList.toggle('oculto', usuarioActual.rol !== 'admin');
+  $('#nav-configuracion').classList.toggle('oculto', usuarioActual.rol !== 'admin');
   cambiarVista('dashboard');
 }
 
@@ -139,6 +150,7 @@ function cambiarVista(vista) {
   if (vista === 'pacientes') cargarPacientes();
   if (vista === 'turnos') cargarTurnos();
   if (vista === 'usuarios') cargarUsuarios();
+  if (vista === 'configuracion') cargarConfiguracionSmtp();
 }
 
 /* ---------- Dashboard ---------- */
@@ -224,8 +236,31 @@ function abrirFormPaciente(paciente) {
         <div class="campo"><label>Telefono</label><input name="telefono" value="${escapeHtml(paciente?.telefono)}" /></div>
         <div class="campo"><label>Email</label><input type="email" name="email" value="${escapeHtml(paciente?.email)}" /></div>
       </div>
+      <div class="grid-2">
+        <div class="campo">
+          <label>Sexo</label>
+          <select name="sexo">
+            <option value="">Sin especificar</option>
+            ${['Femenino', 'Masculino', 'Otro']
+              .map((op) => `<option value="${op}" ${paciente?.sexo === op ? 'selected' : ''}>${op}</option>`)
+              .join('')}
+          </select>
+        </div>
+        <div class="campo">
+          <label>Estado civil</label>
+          <select name="estado_civil">
+            <option value="">Sin especificar</option>
+            ${['Soltero/a', 'Casado/a', 'Union libre', 'Divorciado/a', 'Viudo/a']
+              .map((op) => `<option value="${op}" ${paciente?.estado_civil === op ? 'selected' : ''}>${op}</option>`)
+              .join('')}
+          </select>
+        </div>
+      </div>
       <div class="campo"><label>Direccion</label><input name="direccion" value="${escapeHtml(paciente?.direccion)}" /></div>
-      <div class="campo"><label>Obra social</label><input name="obra_social" value="${escapeHtml(paciente?.obra_social)}" /></div>
+      <div class="grid-2">
+        <div class="campo"><label>Obra social</label><input name="obra_social" value="${escapeHtml(paciente?.obra_social)}" /></div>
+        <div class="campo"><label>Aseguradora</label><input name="aseguradora" value="${escapeHtml(paciente?.aseguradora)}" /></div>
+      </div>
       <div class="campo"><label>Notas</label><textarea name="notas">${escapeHtml(paciente?.notas)}</textarea></div>
       <button type="submit" style="width:100%">${esEdicion ? 'Guardar cambios' : 'Crear paciente'}</button>
     </form>
@@ -254,6 +289,7 @@ async function abrirFichaPaciente(id) {
   try {
     const paciente = await Api.get(`/api/pacientes/${id}`);
     const puedeClinica = usuarioActual.rol === 'admin' || usuarioActual.rol === 'doctor';
+    const puedeTratamientos = usuarioActual.rol === 'recepcion';
     abrirPanel(`
       <button class="secundario cerrar" onclick="cerrarPanel()">Cerrar</button>
       <h2>${escapeHtml(paciente.apellido)}, ${escapeHtml(paciente.nombre)}</h2>
@@ -262,9 +298,13 @@ async function abrirFichaPaciente(id) {
         <button class="tab-btn activo" data-tab="datos">Datos</button>
         ${puedeClinica ? '<button class="tab-btn" data-tab="clinica">Historia clinica</button>' : ''}
         ${puedeClinica ? '<button class="tab-btn" data-tab="recetas">Recetas</button>' : ''}
+        ${puedeTratamientos ? '<button class="tab-btn" data-tab="tratamientos">Tratamientos</button>' : ''}
       </div>
       <div id="tab-datos" class="tab-contenido">
         <div class="campo"><label>Fecha de nacimiento</label><div>${escapeHtml(paciente.fecha_nacimiento) || '-'}</div></div>
+        <div class="campo"><label>Sexo</label><div>${escapeHtml(paciente.sexo) || '-'}</div></div>
+        <div class="campo"><label>Estado civil</label><div>${escapeHtml(paciente.estado_civil) || '-'}</div></div>
+        <div class="campo"><label>Aseguradora</label><div>${escapeHtml(paciente.aseguradora) || '-'}</div></div>
         <div class="campo"><label>Email</label><div>${escapeHtml(paciente.email) || '-'}</div></div>
         <div class="campo"><label>Direccion</label><div>${escapeHtml(paciente.direccion) || '-'}</div></div>
         <div class="campo"><label>Notas</label><div>${escapeHtml(paciente.notas) || '-'}</div></div>
@@ -272,6 +312,7 @@ async function abrirFichaPaciente(id) {
       </div>
       ${puedeClinica ? `<div id="tab-clinica" class="tab-contenido oculto"></div>` : ''}
       ${puedeClinica ? `<div id="tab-recetas" class="tab-contenido oculto"></div>` : ''}
+      ${puedeTratamientos ? `<div id="tab-tratamientos" class="tab-contenido oculto"></div>` : ''}
     `);
 
     $('#btn-editar-paciente').addEventListener('click', () => abrirFormPaciente(paciente));
@@ -287,6 +328,9 @@ async function abrirFichaPaciente(id) {
       cargarHistoriaClinica(paciente.id);
       cargarRecetas(paciente.id);
     }
+    if (puedeTratamientos) {
+      cargarTratamientosResumen(paciente.id);
+    }
   } catch (e) {
     toast(e.message, 'error');
   }
@@ -300,7 +344,7 @@ async function cargarHistoriaClinica(pacienteId) {
   try {
     const historias = await Api.get(`/api/historias/paciente/${pacienteId}`);
     cont.innerHTML = `
-      <button id="btn-nueva-historia">+ Nueva consulta</button>
+      <button id="btn-nueva-historia">+ Nueva valoracion</button>
       <div style="margin-top:14px">
         ${
           historias.length
@@ -310,10 +354,17 @@ async function cargarHistoriaClinica(pacienteId) {
               <div class="tarjeta-registro">
                 <div class="fecha">${escapeHtml(h.fecha)}</div>
                 <div><strong>Motivo:</strong> ${escapeHtml(h.motivo_consulta) || '-'}</div>
+                <div><strong>Presion arterial:</strong> ${escapeHtml(h.presion_arterial) || '-'}</div>
+                <div><strong>Peso:</strong> ${escapeHtml(h.peso) || '-'}</div>
                 <div><strong>Diagnostico:</strong> ${escapeHtml(h.diagnostico) || '-'}</div>
                 <div><strong>Tratamiento:</strong> ${escapeHtml(h.tratamiento) || '-'}</div>
                 ${h.observaciones ? `<div><strong>Observaciones:</strong> ${escapeHtml(h.observaciones)}</div>` : ''}
                 <div class="doctor">Dr./Dra. ${escapeHtml(h.doctor_nombre) || '-'}</div>
+                <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
+                  <button class="secundario" data-exportar-historia="${h.id}">Exportar a Word</button>
+                  <button class="secundario" data-exportar-tratamiento="${h.id}">Exportar tratamiento (media carta)</button>
+                  <button class="secundario" data-email-historia="${h.id}">Enviar por email</button>
+                </div>
               </div>`
                 )
                 .join('')
@@ -322,17 +373,42 @@ async function cargarHistoriaClinica(pacienteId) {
       </div>
     `;
     $('#btn-nueva-historia').addEventListener('click', () => abrirFormHistoria(pacienteId));
+    $$('#tab-clinica [data-exportar-historia]').forEach((btn) => {
+      btn.addEventListener('click', () =>
+        descargarDocumento(
+          `/api/historias/${btn.dataset.exportarHistoria}/exportar-word`,
+          `historia-clinica-${btn.dataset.exportarHistoria}.docx`
+        )
+      );
+    });
+    $$('#tab-clinica [data-exportar-tratamiento]').forEach((btn) => {
+      btn.addEventListener('click', () =>
+        descargarDocumento(
+          `/api/historias/${btn.dataset.exportarTratamiento}/exportar-tratamiento-word`,
+          `tratamiento-${btn.dataset.exportarTratamiento}.docx`
+        )
+      );
+    });
+    $$('#tab-clinica [data-email-historia]').forEach((btn) => {
+      btn.addEventListener('click', () => abrirFormEnviarEmail(btn.dataset.emailHistoria, pacienteId));
+    });
   } catch (e) {
     toast(e.message, 'error');
   }
 }
 
 function abrirFormHistoria(pacienteId) {
+  const ahora = new Date().toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
   abrirPanel(`
     <button class="secundario cerrar" onclick="cerrarPanel()">Cerrar</button>
-    <h2>Nueva consulta</h2>
+    <h2>Nueva valoracion</h2>
+    <p style="color:#667">Fecha y hora: <strong>${escapeHtml(ahora)}</strong> (se registra automaticamente)</p>
     <form id="form-historia">
       <div class="campo"><label>Motivo de consulta</label><textarea name="motivo_consulta"></textarea></div>
+      <div class="grid-2">
+        <div class="campo"><label>Presion arterial</label><input name="presion_arterial" placeholder="Ej: 120/80" /></div>
+        <div class="campo"><label>Peso</label><input name="peso" placeholder="Ej: 70kg" /></div>
+      </div>
       <div class="campo"><label>Diagnostico</label><textarea name="diagnostico"></textarea></div>
       <div class="campo"><label>Tratamiento</label><textarea name="tratamiento"></textarea></div>
       <div class="campo"><label>Observaciones</label><textarea name="observaciones"></textarea></div>
@@ -347,6 +423,35 @@ function abrirFormHistoria(pacienteId) {
       await Api.post('/api/historias', datos);
       toast('Consulta guardada', 'exito');
       abrirFichaPaciente(pacienteId);
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  });
+}
+
+async function abrirFormEnviarEmail(historiaId, pacienteId) {
+  let emailSugerido = '';
+  try {
+    const paciente = await Api.get(`/api/pacientes/${pacienteId}`);
+    emailSugerido = paciente.email || '';
+  } catch (e) {
+    // si falla la sugerencia, el campo queda vacio
+  }
+  abrirPanel(`
+    <button class="secundario cerrar" onclick="cerrarPanel()">Cerrar</button>
+    <h2>Enviar historia clinica por email</h2>
+    <form id="form-enviar-email">
+      <div class="campo"><label>Email de destino</label><input type="email" name="destinatario" required value="${escapeHtml(emailSugerido)}" /></div>
+      <button type="submit" style="width:100%">Enviar</button>
+    </form>
+  `);
+  $('#form-enviar-email').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const datos = Object.fromEntries(new FormData(e.target).entries());
+    try {
+      await Api.post(`/api/historias/${historiaId}/enviar-email`, datos);
+      toast('Email enviado', 'exito');
+      cerrarPanel();
     } catch (err) {
       toast(err.message, 'error');
     }
@@ -410,10 +515,54 @@ function abrirFormReceta(pacienteId) {
   });
 }
 
+/* ---------- Tratamientos (vista limitada para recepcion) ---------- */
+
+async function cargarTratamientosResumen(pacienteId) {
+  const cont = $('#tab-tratamientos');
+  if (!cont) return;
+  try {
+    const tratamientos = await Api.get(`/api/historias/paciente/${pacienteId}/tratamientos`);
+    cont.innerHTML = `
+      <p style="color:#667">Solo se muestra el tratamiento indicado por el doctor/a, para imprimir la formula.</p>
+      ${
+        tratamientos.length
+          ? tratamientos
+              .map(
+                (t) => `
+            <div class="tarjeta-registro">
+              <div class="fecha">${escapeHtml(t.fecha)}</div>
+              <div><strong>Tratamiento:</strong> ${escapeHtml(t.tratamiento)}</div>
+              <div class="doctor">Dr./Dra. ${escapeHtml(t.doctor_nombre) || '-'}</div>
+              <div style="margin-top:10px;">
+                <button class="secundario" data-exportar-tratamiento="${t.id}">Exportar a Word (media carta)</button>
+              </div>
+            </div>`
+              )
+              .join('')
+          : '<div class="vacio">Sin tratamientos registrados.</div>'
+      }
+    `;
+    $$('#tab-tratamientos [data-exportar-tratamiento]').forEach((btn) => {
+      btn.addEventListener('click', () =>
+        descargarDocumento(
+          `/api/historias/${btn.dataset.exportarTratamiento}/exportar-tratamiento-word`,
+          `tratamiento-${btn.dataset.exportarTratamiento}.docx`
+        )
+      );
+    });
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
 /* ---------- Turnos / Agenda ---------- */
 
 $('#turnos-fecha').addEventListener('change', cargarTurnos);
 $('#btn-nuevo-turno').addEventListener('click', () => abrirFormTurno());
+$('#btn-descargar-agenda').addEventListener('click', () => {
+  const fecha = $('#turnos-fecha').value || fechaHoy();
+  descargarDocumento(`/api/turnos/exportar-word?fecha=${fecha}`, `turnos-${fecha}.docx`);
+});
 
 function fechaHoy() {
   return new Date().toISOString().slice(0, 10);
@@ -589,7 +738,13 @@ function renderTablaUsuarios(usuarios) {
       <tr>
         <td>${escapeHtml(u.nombre_completo)}</td>
         <td>${escapeHtml(u.username)}</td>
-        <td>${etiquetaRol(u.rol)}</td>
+        <td>
+          <select data-rol="${u.id}">
+            ${['recepcion', 'doctor', 'admin']
+              .map((r) => `<option value="${r}" ${r === u.rol ? 'selected' : ''}>${etiquetaRol(r)}</option>`)
+              .join('')}
+          </select>
+        </td>
         <td>${u.activo ? 'Activo' : 'Inactivo'}</td>
         <td class="acciones">
           <button class="secundario" data-resetpass="${u.id}">Restablecer contraseña</button>
@@ -598,7 +753,7 @@ function renderTablaUsuarios(usuarios) {
       </tr>`
     )
     .join('');
-  return `<table><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th><th></th></tr></thead><tbody>${filas}</tbody></table>`;
+  return `<table><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol / permisos</th><th>Estado</th><th></th></tr></thead><tbody>${filas}</tbody></table>`;
 }
 
 function adjuntarEventosUsuarios() {
@@ -614,6 +769,18 @@ function adjuntarEventosUsuarios() {
   });
   $$('[data-resetpass]').forEach((btn) => {
     btn.addEventListener('click', () => abrirFormResetPassword(btn.dataset.resetpass));
+  });
+  $$('[data-rol]').forEach((sel) => {
+    sel.addEventListener('change', async () => {
+      try {
+        await Api.put(`/api/usuarios/${sel.dataset.rol}/rol`, { rol: sel.value });
+        toast('Rol actualizado', 'exito');
+      } catch (e) {
+        toast(e.message, 'error');
+      } finally {
+        cargarUsuarios();
+      }
+    });
   });
 }
 
@@ -671,6 +838,39 @@ function abrirFormUsuario() {
     }
   });
 }
+
+/* ---------- Configuracion SMTP (solo admin) ---------- */
+
+async function cargarConfiguracionSmtp() {
+  if (usuarioActual.rol !== 'admin') return;
+  try {
+    const config = await Api.get('/api/config/smtp');
+    const form = $('#form-smtp');
+    form.host.value = config.host || '';
+    form.puerto.value = config.puerto || '587';
+    form.usuario.value = config.usuario || '';
+    form.remitente.value = config.remitente || '';
+    form.seguro.value = config.seguro ? '1' : '';
+    $('#smtp-estado').textContent = config.configurado
+      ? 'El envio de email por correo esta configurado.'
+      : 'Todavia no configuraste el envio de email.';
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+$('#form-smtp').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const datos = Object.fromEntries(new FormData(e.target).entries());
+  datos.seguro = datos.seguro === '1';
+  try {
+    await Api.put('/api/config/smtp', datos);
+    toast('Configuracion guardada', 'exito');
+    cargarConfiguracionSmtp();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
 
 /* ---------- Arranque ---------- */
 

@@ -123,20 +123,67 @@ Electron (antivirus, proxy corporativo, etc.), no solo el permiso de npm.
 
 ## 3. Uso diario
 
-- **Recepción**: gestiona pacientes y la agenda de turnos.
-- **Doctor/a**: además de lo anterior, puede cargar historia clínica y recetas de cada paciente.
-- **Admin**: puede crear usuarios nuevos (Usuarios → Nuevo usuario) y les asigna el rol correspondiente
-  (`recepcion`, `doctor` o `admin`).
+- **Recepción**: gestiona pacientes, agenda turnos y puede imprimir el tratamiento (fórmula médica) que
+  cargó el doctor/a, sin ver el resto de la historia clínica.
+- **Doctor/a**: además de lo anterior, puede crear pacientes, agendar/cancelar turnos, y cargar/editar la
+  historia clínica completa (presión arterial, peso, diagnóstico, tratamiento).
+- **Admin**: todo lo anterior, y además crea usuarios y les asigna o cambia el rol (Usuarios → seleccionar
+  rol en la lista desplegable), y configura el envío de emails (Configuración).
 
 ## Roles y permisos
 
-| Acción                          | Recepción | Doctor/a | Admin |
-|----------------------------------|:---------:|:--------:|:-----:|
-| Ver/crear/editar pacientes       | ✅        | ✅ (ver) | ✅    |
-| Agendar / modificar turnos       | ✅        | ✅ (ver) | ✅    |
-| Ver / cargar historia clínica    | ❌        | ✅       | ✅    |
-| Ver / emitir recetas             | ❌        | ✅       | ✅    |
-| Crear y administrar usuarios     | ❌        | ❌       | ✅    |
+| Acción                                    | Recepción | Doctor/a | Admin |
+|--------------------------------------------|:---------:|:--------:|:-----:|
+| Ver / crear / editar pacientes              | ✅        | ✅       | ✅    |
+| Agendar / modificar / cancelar turnos       | ✅        | ✅       | ✅    |
+| Ver / cargar historia clínica completa      | ❌        | ✅       | ✅    |
+| Exportar / imprimir solo el tratamiento     | ✅        | ✅       | ✅    |
+| Enviar historia clínica por email           | ❌        | ✅       | ✅    |
+| Cambiar el rol de otros usuarios            | ❌        | ❌       | ✅    |
+| Configurar el envío de email (SMTP)         | ❌        | ❌       | ✅    |
+
+Recepción **no** ve diagnóstico, presión arterial, peso ni observaciones — por confidencialidad, esos datos
+quedan reservados a doctor/a y admin. Solo puede ver y exportar el campo de tratamiento, para imprimir la
+fórmula médica.
+
+## Exportar e imprimir documentos
+
+Desde la ficha del paciente (pestaña "Historia clínica" o "Tratamientos") y desde la Agenda, hay botones para
+generar documentos **Word (.docx)**, editables e imprimibles:
+
+- **Exportar a Word**: la historia clínica completa de una consulta (doctor/a y admin).
+- **Exportar tratamiento (media carta)**: solo el tratamiento, en una página de tamaño media carta
+  (5.5" x 8.5"), lista para imprimir como fórmula médica (todos los roles).
+- **Enviar por email**: envía la historia clínica completa como adjunto Word al email que indiques
+  (doctor/a y admin; requiere configurar el correo primero, ver más abajo).
+- **Descargar lista (Word)**, en la Agenda: exporta la lista de turnos del día seleccionado, con nombre y
+  teléfono de cada paciente, en formato tabla — pensada para imprimir y usar al llamar a los pacientes.
+
+Al hacer clic en cualquiera de estos botones se abre el diálogo nativo de Windows para elegir dónde guardar
+el archivo.
+
+## Configurar el envío de email
+
+Como admin, andá a **Configuración** y cargá los datos de tu servidor de correo:
+
+- **Gmail**: servidor `smtp.gmail.com`, puerto `587`, sin SSL. En "Contraseña" hay que usar una
+  [contraseña de aplicación](https://myaccount.google.com/apppasswords) de Google, no la contraseña normal
+  de la cuenta (Gmail no permite el acceso directo con la contraseña habitual).
+- **Outlook/Hotmail**: servidor `smtp.office365.com`, puerto `587`, sin SSL.
+- Para otros proveedores, pedile los datos SMTP a quien administre ese correo.
+
+Una vez configurado, el botón "Enviar por email" en la historia clínica de cada paciente queda habilitado.
+
+## Seguridad
+
+- Las contraseñas se guardan encriptadas (nunca en texto plano).
+- Cada sesión expira a las 12 horas.
+- Después de 5 intentos fallidos de inicio de sesión con el mismo usuario, ese usuario queda bloqueado 15
+  minutos.
+- La información clínica (diagnóstico, tratamiento, signos vitales) solo es visible para doctor/a y admin.
+- El servidor solo debe usarse dentro de la red local del consultorio — no lo expongas a internet ni abras
+  su puerto (4000) en el router.
+- Hacé copias de seguridad periódicas de la carpeta `server/data/` (ver más abajo).
 
 ## Respaldo de la información
 

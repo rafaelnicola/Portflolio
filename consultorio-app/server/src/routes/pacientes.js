@@ -30,18 +30,45 @@ router.get('/:id', (req, res) => {
   res.json(paciente);
 });
 
-router.post('/', requireRol('admin', 'recepcion'), (req, res) => {
-  const { nombre, apellido, dni, fecha_nacimiento, telefono, email, direccion, obra_social, notas } = req.body || {};
+router.post('/', requireRol('admin', 'recepcion', 'doctor'), (req, res) => {
+  const {
+    nombre,
+    apellido,
+    dni,
+    fecha_nacimiento,
+    telefono,
+    email,
+    direccion,
+    obra_social,
+    sexo,
+    aseguradora,
+    estado_civil,
+    notas,
+  } = req.body || {};
   if (!nombre || !apellido) {
     return res.status(400).json({ error: 'Nombre y apellido son requeridos' });
   }
   try {
     const info = db
       .prepare(
-        `INSERT INTO pacientes (nombre, apellido, dni, fecha_nacimiento, telefono, email, direccion, obra_social, notas)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO pacientes
+         (nombre, apellido, dni, fecha_nacimiento, telefono, email, direccion, obra_social, sexo, aseguradora, estado_civil, notas)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      .run(nombre, apellido, dni || null, fecha_nacimiento || null, telefono || null, email || null, direccion || null, obra_social || null, notas || null);
+      .run(
+        nombre,
+        apellido,
+        dni || null,
+        fecha_nacimiento || null,
+        telefono || null,
+        email || null,
+        direccion || null,
+        obra_social || null,
+        sexo || null,
+        aseguradora || null,
+        estado_civil || null,
+        notas || null
+      );
     res.status(201).json({ id: info.lastInsertRowid });
   } catch (err) {
     if (String(err.message).includes('UNIQUE')) {
@@ -51,14 +78,42 @@ router.post('/', requireRol('admin', 'recepcion'), (req, res) => {
   }
 });
 
-router.put('/:id', requireRol('admin', 'recepcion'), (req, res) => {
-  const { nombre, apellido, dni, fecha_nacimiento, telefono, email, direccion, obra_social, notas } = req.body || {};
+router.put('/:id', requireRol('admin', 'recepcion', 'doctor'), (req, res) => {
+  const {
+    nombre,
+    apellido,
+    dni,
+    fecha_nacimiento,
+    telefono,
+    email,
+    direccion,
+    obra_social,
+    sexo,
+    aseguradora,
+    estado_civil,
+    notas,
+  } = req.body || {};
   const existente = db.prepare('SELECT id FROM pacientes WHERE id = ?').get(req.params.id);
   if (!existente) return res.status(404).json({ error: 'Paciente no encontrado' });
   db.prepare(
     `UPDATE pacientes SET nombre = ?, apellido = ?, dni = ?, fecha_nacimiento = ?, telefono = ?, email = ?,
-     direccion = ?, obra_social = ?, notas = ?, updated_at = datetime('now') WHERE id = ?`
-  ).run(nombre, apellido, dni || null, fecha_nacimiento || null, telefono || null, email || null, direccion || null, obra_social || null, notas || null, req.params.id);
+     direccion = ?, obra_social = ?, sexo = ?, aseguradora = ?, estado_civil = ?, notas = ?, updated_at = datetime('now')
+     WHERE id = ?`
+  ).run(
+    nombre,
+    apellido,
+    dni || null,
+    fecha_nacimiento || null,
+    telefono || null,
+    email || null,
+    direccion || null,
+    obra_social || null,
+    sexo || null,
+    aseguradora || null,
+    estado_civil || null,
+    notas || null,
+    req.params.id
+  );
   res.json({ ok: true });
 });
 

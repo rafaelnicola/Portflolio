@@ -51,6 +51,7 @@
         <button data-vista="pacientes" class="nav-btn">Pacientes</button>
         <button data-vista="turnos" class="nav-btn">Agenda</button>
         <button data-vista="usuarios" class="nav-btn oculto" id="nav-usuarios">Usuarios</button>
+        <button data-vista="configuracion" class="nav-btn oculto" id="nav-configuracion">Configuracion</button>
       </nav>
       <div class="usuario-info">
         <div class="nombre" id="info-nombre"></div>
@@ -95,6 +96,7 @@
           <h2 style="margin:0">Agenda</h2>
           <div style="display:flex; gap:8px; align-items:center;">
             <input id="turnos-fecha" type="date" />
+            <button class="secundario" id="btn-descargar-agenda">Descargar lista (Word)</button>
             <button id="btn-nuevo-turno">+ Nuevo turno</button>
           </div>
         </div>
@@ -108,6 +110,37 @@
           <button id="btn-nuevo-usuario">+ Nuevo usuario</button>
         </div>
         <div id="usuarios-tabla"></div>
+      </section>
+
+      <!-- Configuracion (admin) -->
+      <section id="vista-configuracion" class="vista oculto">
+        <h2>Configuracion de correo (SMTP)</h2>
+        <p style="color:#667; max-width:520px;">
+          Cargá los datos del correo que se va a usar para enviar historias clinicas por email.
+          Si usás Gmail, el servidor es <code>smtp.gmail.com</code>, puerto <code>587</code>, y en
+          "contraseña" tenés que usar una <strong>contraseña de aplicación</strong> (no la contraseña normal
+          de tu cuenta de Google).
+        </p>
+        <div style="max-width:420px;">
+          <form id="form-smtp">
+            <div class="campo"><label>Servidor SMTP</label><input name="host" placeholder="smtp.gmail.com" required /></div>
+            <div class="grid-2">
+              <div class="campo"><label>Puerto</label><input name="puerto" placeholder="587" /></div>
+              <div class="campo">
+                <label>Conexion segura (SSL)</label>
+                <select name="seguro">
+                  <option value="">No (recomendado con puerto 587)</option>
+                  <option value="1">Si (puerto 465)</option>
+                </select>
+              </div>
+            </div>
+            <div class="campo"><label>Usuario / email</label><input name="usuario" type="email" required /></div>
+            <div class="campo"><label>Contraseña</label><input name="password" type="password" placeholder="Dejar vacio para no cambiarla" /></div>
+            <div class="campo"><label>Remitente que vera el paciente</label><input name="remitente" placeholder="Igual al usuario si se deja vacio" /></div>
+            <button type="submit" style="width:100%">Guardar configuracion</button>
+          </form>
+          <p id="smtp-estado" style="color:#667; margin-top:12px;"></p>
+        </div>
       </section>
     </div>
   </div>
