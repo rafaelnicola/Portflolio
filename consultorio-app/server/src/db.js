@@ -130,10 +130,16 @@ db.fotosDir = fotosDir;
 
 // Valores por defecto del consultorio (se pueden editar despues desde Configuracion)
 if (getSetting('consultorio_direccion') === null) {
-  setSetting('consultorio_direccion', 'Calle 25 n°16-101 Los Alcazarez');
+  setSetting('consultorio_direccion', 'Calle 25 No. 16-101 Barrio Los Alcázares');
 }
 if (getSetting('consultorio_telefono') === null) {
-  setSetting('consultorio_telefono', '3053282029');
+  setSetting('consultorio_telefono', '4336041 - 3053282029');
+}
+if (getSetting('consultorio_medico_nombre') === null) {
+  setSetting('consultorio_medico_nombre', 'Dr. Rafael de J. Nicola A. M.D');
+}
+if (getSetting('consultorio_medico_especialidad') === null) {
+  setSetting('consultorio_medico_especialidad', 'Medicina Alternativa – Bioregulación');
 }
 
 module.exports = db;

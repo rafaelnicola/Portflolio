@@ -177,17 +177,20 @@ y lo abre automáticamente** (con Word, o el programa que tengas asociado a `.do
 
 - **Exportar a Word**: la historia clínica completa de una consulta, con el logo del consultorio arriba.
 - **Exportar tratamiento (media carta)**: solo el tratamiento, en una página de tamaño media carta
-  horizontal (8.5" x 5.5"), con el logo arriba y la dirección/teléfono del consultorio abajo — lista para
-  imprimir como fórmula médica.
+  horizontal (8.5" x 5.5"), en formato Courier New 9.5 — con el logo, nombre y especialidad del médico como
+  membrete arriba, y la dirección/teléfonos del consultorio abajo. Lista para imprimir como fórmula médica.
 - **Enviar por email**: envía la historia clínica completa como PDF adjunto al email que indiques (requiere
   configurar el correo primero, ver más abajo).
 - **Descargar lista (Word)**, en la Agenda: exporta la lista de turnos del día seleccionado, con nombre y
   teléfono de cada paciente, en formato tabla — pensada para imprimir y usar al llamar a los pacientes.
 
-## Datos del consultorio (dirección y teléfono)
+## Datos del consultorio
 
-Como admin, en **Configuración** → "Datos del consultorio" podés cambiar la dirección y el teléfono que
-aparecen en el pie de página de la fórmula médica, sin tocar código.
+Como admin, en **Configuración** → "Datos del consultorio" podés cambiar, sin tocar código:
+
+- Nombre del médico/a que aparece como membrete (firma) en la fórmula
+- Especialidad, debajo del nombre
+- Dirección y teléfonos, en el pie de página de la fórmula
 
 ## Configurar el envío de email
 

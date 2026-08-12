@@ -18,19 +18,23 @@ const {
   convertInchesToTwip,
 } = require('docx');
 
-// Proporcion real del archivo assets/logo.png (ancho x alto en px)
+// Proporcion real de los archivos en assets/ (ancho x alto en px)
 const LOGO_PROPORCION = 888 / 776;
 const LOGO_BUFFER = fs.readFileSync(path.join(__dirname, 'assets', 'logo.png'));
+const LOGO_MARCA_PROPORCION = 1; // logo-mark.png es cuadrado (888x888)
+const LOGO_MARCA_BUFFER = fs.readFileSync(path.join(__dirname, 'assets', 'logo-mark.png'));
 
-function encabezadoLogo(anchoPx) {
+function encabezadoLogo(anchoPx, { soloMarca = false } = {}) {
+  const buffer = soloMarca ? LOGO_MARCA_BUFFER : LOGO_BUFFER;
+  const proporcion = soloMarca ? LOGO_MARCA_PROPORCION : LOGO_PROPORCION;
   return new Paragraph({
     alignment: AlignmentType.CENTER,
     spacing: { after: 200 },
     children: [
       new ImageRun({
-        data: LOGO_BUFFER,
+        data: buffer,
         type: 'png',
-        transformation: { width: anchoPx, height: Math.round(anchoPx / LOGO_PROPORCION) },
+        transformation: { width: anchoPx, height: Math.round(anchoPx / proporcion) },
       }),
     ],
   });
@@ -63,6 +67,16 @@ function formatearFecha(fechaUtcTexto) {
   const fecha = new Date(`${fechaUtcTexto.replace(' ', 'T')}Z`);
   if (Number.isNaN(fecha.getTime())) return fechaUtcTexto;
   return fecha.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+}
+
+const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+// Formato "12/ago/2026", igual al membrete impreso que ya usan en el consultorio.
+function formatearFechaCorta(fechaUtcTexto) {
+  if (!fechaUtcTexto) return '-';
+  const fecha = new Date(`${fechaUtcTexto.replace(' ', 'T')}Z`);
+  if (Number.isNaN(fecha.getTime())) return fechaUtcTexto;
+  return `${fecha.getDate()}/${MESES_CORTOS[fecha.getMonth()]}/${fecha.getFullYear()}`;
 }
 
 function campo(etiqueta, valor) {
@@ -105,7 +119,10 @@ function piePaginaConsultorio(direccion, telefono) {
             children: [
               new Paragraph({
                 alignment: AlignmentType.RIGHT,
-                children: [new TextRun({ text: telefono || '', size: 16, color: '667788' })],
+                children: [
+                  new TextRun({ text: 'Teléfonos ', bold: true, size: 16, color: '667788' }),
+                  new TextRun({ text: telefono || '', size: 16, color: '667788' }),
+                ],
               }),
             ],
           }),
@@ -155,6 +172,9 @@ async function generarDocxHistoria(historia, paciente) {
   return Packer.toBuffer(doc);
 }
 
+const FUENTE_CUERPO = 'Courier New';
+const TAMANO_CUERPO = 19; // 9.5pt (docx usa medios puntos)
+
 async function generarDocxTratamiento(historia, paciente, datosConsultorio = {}) {
   const doc = new Document({
     sections: [
@@ -166,7 +186,7 @@ async function generarDocxTratamiento(historia, paciente, datosConsultorio = {})
               width: convertInchesToTwip(5.5),
               height: convertInchesToTwip(8.5),
             },
-            margin: { top: 540, bottom: 540, left: 540, right: 540 },
+            margin: { top: 500, bottom: 500, left: 600, right: 600 },
           },
         },
         footers: {
@@ -175,20 +195,48 @@ async function generarDocxTratamiento(historia, paciente, datosConsultorio = {})
           }),
         },
         children: [
-          encabezadoLogo(110),
+          encabezadoLogo(85, { soloMarca: true }),
           new Paragraph({
-            text: 'Fórmula médica',
-            heading: HeadingLevel.HEADING_2,
             alignment: AlignmentType.CENTER,
+            spacing: { after: 20 },
+            children: [
+              new TextRun({
+                text: datosConsultorio.medicoNombre || '',
+                font: 'Monotype Corsiva',
+                size: 46,
+                underline: {},
+              }),
+            ],
           }),
-          new Paragraph({ text: ' ' }),
-          campo('Paciente', nombrePaciente(paciente)),
-          campo('DNI', paciente.dni),
-          campo('Fecha y hora', formatearFecha(historia.fecha)),
-          campo('Doctor/a', historia.doctor_nombre),
-          new Paragraph({ text: ' ' }),
-          new Paragraph({ text: 'Tratamiento', heading: HeadingLevel.HEADING_3 }),
-          new Paragraph({ text: historia.tratamiento && historia.tratamiento.trim() ? historia.tratamiento : '-' }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 },
+            children: [
+              new TextRun({
+                text: datosConsultorio.medicoEspecialidad || '',
+                font: 'Arial',
+                size: 17,
+              }),
+            ],
+          }),
+          new Paragraph({
+            spacing: { after: 260 },
+            children: [
+              new TextRun({ text: 'Nombre: ', bold: true, font: FUENTE_CUERPO, size: TAMANO_CUERPO }),
+              new TextRun({ text: `${nombrePaciente(paciente).toUpperCase()}    `, font: FUENTE_CUERPO, size: TAMANO_CUERPO }),
+              new TextRun({ text: 'Fecha: ', bold: true, font: FUENTE_CUERPO, size: TAMANO_CUERPO }),
+              new TextRun({ text: formatearFechaCorta(historia.fecha), font: FUENTE_CUERPO, size: TAMANO_CUERPO }),
+            ],
+          }),
+          ...String(historia.tratamiento || '')
+            .split('\n')
+            .map(
+              (linea) =>
+                new Paragraph({
+                  spacing: { after: 120 },
+                  children: [new TextRun({ text: linea, font: FUENTE_CUERPO, size: TAMANO_CUERPO })],
+                })
+            ),
         ],
       },
     ],
