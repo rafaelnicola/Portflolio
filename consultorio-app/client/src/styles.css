@@ -283,6 +283,38 @@ td.acciones button { padding: 5px 10px; font-size: 12px; }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
+.foto-paciente-editor { margin-bottom: 18px; }
+.foto-paciente-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: var(--azul-claro);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid var(--gris-borde);
+}
+.foto-paciente-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.foto-paciente-avatar span { font-size: 28px; font-weight: 700; color: var(--azul); }
+
+.avatar-mini {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--azul-claro);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  vertical-align: middle;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+.avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-mini span { font-size: 13px; font-weight: 700; color: var(--azul); }
+
 .tarjeta-registro {
   background: var(--azul-claro);
   border-radius: 8px;

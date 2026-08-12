@@ -6,6 +6,9 @@ const bcrypt = require('bcryptjs');
 const dataDir = path.join(__dirname, '..', 'data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
+const fotosDir = path.join(dataDir, 'fotos');
+if (!fs.existsSync(fotosDir)) fs.mkdirSync(fotosDir, { recursive: true });
+
 const db = new DatabaseSync(path.join(dataDir, 'consultorio.db'));
 db.exec('PRAGMA journal_mode = WAL');
 db.exec('PRAGMA foreign_keys = ON');
@@ -96,6 +99,7 @@ function agregarColumnaSiFalta(tabla, columna, definicion) {
 agregarColumnaSiFalta('pacientes', 'sexo', 'TEXT');
 agregarColumnaSiFalta('pacientes', 'aseguradora', 'TEXT');
 agregarColumnaSiFalta('pacientes', 'estado_civil', 'TEXT');
+agregarColumnaSiFalta('pacientes', 'foto', 'TEXT');
 agregarColumnaSiFalta('historias_clinicas', 'presion_arterial', 'TEXT');
 agregarColumnaSiFalta('historias_clinicas', 'peso', 'TEXT');
 
@@ -122,6 +126,7 @@ function setSetting(clave, valor) {
 
 db.getSetting = getSetting;
 db.setSetting = setSetting;
+db.fotosDir = fotosDir;
 
 // Valores por defecto del consultorio (se pueden editar despues desde Configuracion)
 if (getSetting('consultorio_direccion') === null) {

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const Store = require('electron-store');
@@ -49,7 +49,16 @@ ipcMain.handle('archivo:guardar', async (event, { nombreSugerido, datos }) => {
   return { ok: true, filePath, abierto: !errorAlAbrir };
 });
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  // Permite el acceso a la camara para poder tomarle una foto al paciente
+  // desde la app. Todo lo demas queda denegado por seguridad.
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    callback(permission === 'media');
+  });
+  session.defaultSession.setPermissionCheckHandler((webContents, permission) => permission === 'media');
+
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

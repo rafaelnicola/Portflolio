@@ -1,4 +1,6 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const db = require('../db');
 const { requireAuth, requireRol } = require('../auth');
 const { requirePermiso } = require('../permisos');
@@ -6,6 +8,23 @@ const { requirePermiso } = require('../permisos');
 const router = express.Router();
 
 router.use(requireAuth);
+
+const TIPOS_FOTO_PERMITIDOS = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+};
+
+function rutaFoto(pacienteId, extension) {
+  return path.join(db.fotosDir, `paciente-${pacienteId}.${extension}`);
+}
+
+function borrarFotoSiExiste(paciente) {
+  if (!paciente || !paciente.foto) return;
+  const archivo = path.join(db.fotosDir, paciente.foto);
+  if (fs.existsSync(archivo)) fs.unlinkSync(archivo);
+}
 
 router.get('/', (req, res) => {
   const { q } = req.query;
@@ -119,7 +138,54 @@ router.put('/:id', requireRol('admin', 'recepcion', 'doctor'), (req, res) => {
 });
 
 router.delete('/:id', requirePermiso('pacientes_eliminar'), (req, res) => {
+  const paciente = db.prepare('SELECT foto FROM pacientes WHERE id = ?').get(req.params.id);
+  borrarFotoSiExiste(paciente);
   db.prepare('DELETE FROM pacientes WHERE id = ?').run(req.params.id);
+  res.json({ ok: true });
+});
+
+// Foto de perfil del paciente. Habilitado para cualquier usuario autenticado
+// (admin, doctor, recepcion): identificar pacientes por foto es util para todos.
+router.get('/:id/foto', (req, res) => {
+  const paciente = db.prepare('SELECT foto FROM pacientes WHERE id = ?').get(req.params.id);
+  if (!paciente || !paciente.foto) return res.status(404).json({ error: 'Este paciente no tiene foto' });
+  const archivo = path.join(db.fotosDir, paciente.foto);
+  if (!fs.existsSync(archivo)) return res.status(404).json({ error: 'Este paciente no tiene foto' });
+  const extension = paciente.foto.split('.').pop().toLowerCase();
+  const tipo = Object.entries(TIPOS_FOTO_PERMITIDOS).find(([, ext]) => ext === extension);
+  res.setHeader('Content-Type', tipo ? tipo[0] : 'application/octet-stream');
+  res.sendFile(archivo);
+});
+
+router.put('/:id/foto', (req, res) => {
+  const { foto } = req.body || {};
+  if (!foto || typeof foto !== 'string') return res.status(400).json({ error: 'Falta la foto' });
+
+  const coincidencia = foto.match(/^data:(image\/[a-zA-Z+.-]+);base64,(.+)$/);
+  if (!coincidencia) return res.status(400).json({ error: 'Formato de imagen invalido' });
+  const [, mimeType, base64] = coincidencia;
+  const extension = TIPOS_FOTO_PERMITIDOS[mimeType];
+  if (!extension) return res.status(400).json({ error: 'Solo se aceptan imagenes JPG, PNG, WEBP o GIF' });
+
+  const paciente = db.prepare('SELECT id, foto FROM pacientes WHERE id = ?').get(req.params.id);
+  if (!paciente) return res.status(404).json({ error: 'Paciente no encontrado' });
+
+  const buffer = Buffer.from(base64, 'base64');
+  const LIMITE_BYTES = 8 * 1024 * 1024;
+  if (buffer.length > LIMITE_BYTES) return res.status(400).json({ error: 'La imagen es demasiado grande' });
+
+  borrarFotoSiExiste(paciente);
+  const nombreArchivo = `paciente-${paciente.id}.${extension}`;
+  fs.writeFileSync(rutaFoto(paciente.id, extension), buffer);
+  db.prepare('UPDATE pacientes SET foto = ? WHERE id = ?').run(nombreArchivo, paciente.id);
+  res.json({ ok: true });
+});
+
+router.delete('/:id/foto', (req, res) => {
+  const paciente = db.prepare('SELECT id, foto FROM pacientes WHERE id = ?').get(req.params.id);
+  if (!paciente) return res.status(404).json({ error: 'Paciente no encontrado' });
+  borrarFotoSiExiste(paciente);
+  db.prepare('UPDATE pacientes SET foto = NULL WHERE id = ?').run(paciente.id);
   res.json({ ok: true });
 });
 

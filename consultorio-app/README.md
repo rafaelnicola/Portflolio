@@ -140,6 +140,7 @@ lista desplegable — pensado para consultorios con muchos pacientes registrados
 | Acción                                    | Recepción | Doctor/a | Admin |
 |--------------------------------------------|:---------:|:--------:|:-----:|
 | Ver / crear / editar pacientes              | ✅        | ✅       | ✅    |
+| Subir / tomar foto del paciente             | ✅        | ✅       | ✅    |
 | Ver historia clínica completa               | ✅        | ✅       | ✅    |
 | Exportar / enviar por email la historia      | ✅        | ✅       | ✅    |
 | Agendar / modificar turnos                   | ✅        | ✅       | ✅    |
@@ -154,6 +155,19 @@ código: Usuarios → botón **Permisos** en la fila de cada usuario. Por ejempl
 recepcionista puntual el permiso de cargar historia clínica sin cambiarle el rol. Los permisos que ya vienen
 incluidos por el rol (marcados arriba con ✅ liso) aparecen tildados y bloqueados en esa pantalla — para
 sacarlos hay que cambiar el rol del usuario, no se puede hacer ahí.
+
+## Foto del paciente
+
+Al crear o editar un paciente (cualquier usuario puede hacerlo), hay dos formas de agregarle una foto:
+
+- **Subir desde el PC**: abre el explorador de archivos para elegir una imagen ya guardada.
+- **Tomar foto**: usa la cámara conectada a la PC (webcam) para sacarla en el momento.
+
+La imagen se ajusta automáticamente de tamaño antes de guardarse, así que no importa si la foto original es
+muy pesada. Se puede reemplazar o quitar en cualquier momento desde "Editar datos".
+
+> Si "Tomar foto" no encuentra la cámara, revisá en Windows: Configuración → Privacidad y seguridad →
+> Cámara, que el acceso a la cámara esté permitido para las apps de escritorio.
 
 ## Exportar e imprimir documentos
 

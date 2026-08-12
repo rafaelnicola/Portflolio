@@ -67,12 +67,27 @@ const Api = (() => {
     return new Uint8Array(buffer);
   }
 
+  async function getBlobUrl(path) {
+    try {
+      const res = await fetch(`${baseUrl}${path}`, {
+        method: 'GET',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      return URL.createObjectURL(blob);
+    } catch (e) {
+      return null;
+    }
+  }
+
   return {
     setBaseUrl,
     setToken,
     getToken,
     healthCheck,
     getBinary,
+    getBlobUrl,
     get: (path) => request('GET', path),
     post: (path, body) => request('POST', path, body),
     put: (path, body) => request('PUT', path, body),

@@ -22,6 +22,42 @@ function formatearFecha(fechaUtcTexto) {
   return fecha.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
 }
 
+function leerArchivoComoDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// Redimensiona/comprime una imagen en el navegador antes de mandarla al
+// servidor, asi no importa el tamaño de la foto original (camara, celular, etc).
+function redimensionarImagen(dataUrl, maxDim = 640, calidad = 0.85) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', calidad));
+    };
+    img.onerror = () => reject(new Error('No se pudo procesar la imagen'));
+    img.src = dataUrl;
+  });
+}
+
 function mostrarPantalla(id) {
   ['pantalla-config', 'pantalla-login', 'app'].forEach((otro) => {
     $(`#${otro}`).classList.toggle('oculto', otro !== id);
@@ -50,6 +86,8 @@ async function descargarDocumento(path, nombreSugerido) {
 
 /* ---------- Panel lateral reutilizable ---------- */
 
+let alCerrarPanel = null;
+
 function abrirPanel(html) {
   cerrarPanel();
   const fondo = document.createElement('div');
@@ -68,6 +106,10 @@ function abrirPanel(html) {
 }
 
 function cerrarPanel() {
+  if (alCerrarPanel) {
+    alCerrarPanel();
+    alCerrarPanel = null;
+  }
   const fondo = $('#panel-fondo');
   const panel = $('#panel-lateral');
   if (fondo) fondo.remove();
@@ -202,9 +244,22 @@ async function cargarPacientes() {
     const pacientes = await Api.get(`/api/pacientes${q ? `?q=${encodeURIComponent(q)}` : ''}`);
     $('#pacientes-tabla').innerHTML = renderTablaPacientes(pacientes);
     adjuntarEventosPacientes();
+    cargarAvataresPacientes(pacientes);
   } catch (e) {
     toast(e.message, 'error');
   }
+}
+
+function cargarAvataresPacientes(pacientes) {
+  pacientes
+    .filter((p) => p.foto)
+    .forEach((p) => {
+      Api.getBlobUrl(`/api/pacientes/${p.id}/foto`).then((url) => {
+        if (!url) return;
+        const contenedor = document.querySelector(`[data-avatar-mini="${p.id}"]`);
+        if (contenedor) contenedor.innerHTML = `<img src="${url}" alt="" />`;
+      });
+    });
 }
 
 function renderTablaPacientes(pacientes) {
@@ -214,7 +269,9 @@ function renderTablaPacientes(pacientes) {
     .map(
       (p) => `
       <tr>
-        <td>${escapeHtml(p.apellido)}, ${escapeHtml(p.nombre)}</td>
+        <td>
+          <span class="avatar-mini" data-avatar-mini="${p.id}"><span>${escapeHtml((p.nombre || '?').charAt(0).toUpperCase())}</span></span>${escapeHtml(p.apellido)}, ${escapeHtml(p.nombre)}
+        </td>
         <td>${escapeHtml(p.dni) || '-'}</td>
         <td>${escapeHtml(p.telefono) || '-'}</td>
         <td>${escapeHtml(p.obra_social) || '-'}</td>
@@ -248,9 +305,46 @@ function adjuntarEventosPacientes() {
 
 function abrirFormPaciente(paciente) {
   const esEdicion = !!paciente;
+  let fotoPendiente; // undefined = sin cambios, string dataURL = foto nueva, null = se quiere quitar
+  let streamCamara = null;
+
+  function detenerCamara() {
+    if (streamCamara) {
+      streamCamara.getTracks().forEach((t) => t.stop());
+      streamCamara = null;
+    }
+    const contenedor = $('#camara-contenedor');
+    if (contenedor) contenedor.classList.add('oculto');
+  }
+  alCerrarPanel = detenerCamara;
+
   abrirPanel(`
     <button class="secundario cerrar" onclick="cerrarPanel()">Cerrar</button>
     <h2>${esEdicion ? 'Editar paciente' : 'Nuevo paciente'}</h2>
+    <div class="campo foto-paciente-editor">
+      <label>Foto</label>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div class="foto-paciente-avatar" id="foto-preview-contenedor">
+          <img id="foto-preview-img" class="oculto" />
+          <span id="foto-preview-inicial">${escapeHtml((paciente?.nombre || '?').charAt(0).toUpperCase())}</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button type="button" class="secundario" id="btn-subir-foto">Subir desde el PC</button>
+            <button type="button" class="secundario" id="btn-tomar-foto">Tomar foto</button>
+            <button type="button" class="secundario oculto" id="btn-quitar-foto">Quitar foto</button>
+          </div>
+          <input type="file" id="input-foto" accept="image/*" class="oculto" />
+        </div>
+      </div>
+      <div id="camara-contenedor" class="oculto" style="margin-top:10px;">
+        <video id="camara-video" autoplay playsinline style="width:100%; max-width:320px; border-radius:8px; background:#000;"></video>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button type="button" id="btn-capturar-foto">Capturar</button>
+          <button type="button" class="secundario" id="btn-cancelar-camara">Cancelar</button>
+        </div>
+      </div>
+    </div>
     <form id="form-paciente">
       <div class="grid-2">
         <div class="campo"><label>Nombre</label><input name="nombre" required value="${escapeHtml(paciente?.nombre)}" /></div>
@@ -294,17 +388,92 @@ function abrirFormPaciente(paciente) {
     </form>
   `);
 
+  function mostrarPreviewFoto(url) {
+    $('#foto-preview-img').src = url;
+    $('#foto-preview-img').classList.remove('oculto');
+    $('#foto-preview-inicial').classList.add('oculto');
+    $('#btn-quitar-foto').classList.remove('oculto');
+  }
+
+  function ocultarPreviewFoto() {
+    $('#foto-preview-img').classList.add('oculto');
+    $('#foto-preview-img').src = '';
+    $('#foto-preview-inicial').classList.remove('oculto');
+    $('#btn-quitar-foto').classList.add('oculto');
+  }
+
+  if (esEdicion && paciente.foto) {
+    Api.getBlobUrl(`/api/pacientes/${paciente.id}/foto`).then((url) => {
+      if (url) mostrarPreviewFoto(url);
+    });
+  }
+
+  $('#btn-subir-foto').addEventListener('click', () => $('#input-foto').click());
+  $('#input-foto').addEventListener('change', async (e) => {
+    const archivo = e.target.files[0];
+    if (!archivo) return;
+    try {
+      const original = await leerArchivoComoDataUrl(archivo);
+      const redimensionado = await redimensionarImagen(original);
+      fotoPendiente = redimensionado;
+      mostrarPreviewFoto(redimensionado);
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+    e.target.value = '';
+  });
+
+  $('#btn-quitar-foto').addEventListener('click', () => {
+    fotoPendiente = null;
+    ocultarPreviewFoto();
+  });
+
+  $('#btn-tomar-foto').addEventListener('click', async () => {
+    try {
+      streamCamara = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
+      $('#camara-video').srcObject = streamCamara;
+      $('#camara-contenedor').classList.remove('oculto');
+    } catch (err) {
+      toast('No se pudo acceder a la camara. Revisa que este conectada y que Windows le de permiso a la app.', 'error');
+    }
+  });
+
+  $('#btn-cancelar-camara').addEventListener('click', detenerCamara);
+
+  $('#btn-capturar-foto').addEventListener('click', async () => {
+    const video = $('#camara-video');
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    try {
+      const redimensionado = await redimensionarImagen(canvas.toDataURL('image/jpeg', 0.9));
+      fotoPendiente = redimensionado;
+      mostrarPreviewFoto(redimensionado);
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+    detenerCamara();
+  });
+
   $('#form-paciente').addEventListener('submit', async (e) => {
     e.preventDefault();
     const datos = Object.fromEntries(new FormData(e.target).entries());
     try {
+      let pacienteId = paciente?.id;
       if (esEdicion) {
-        await Api.put(`/api/pacientes/${paciente.id}`, datos);
-        toast('Paciente actualizado', 'exito');
+        await Api.put(`/api/pacientes/${pacienteId}`, datos);
       } else {
-        await Api.post('/api/pacientes', datos);
-        toast('Paciente creado', 'exito');
+        const creado = await Api.post('/api/pacientes', datos);
+        pacienteId = creado.id;
       }
+      if (fotoPendiente === null) {
+        await Api.del(`/api/pacientes/${pacienteId}/foto`);
+      } else if (typeof fotoPendiente === 'string') {
+        await Api.put(`/api/pacientes/${pacienteId}/foto`, { foto: fotoPendiente });
+      }
+      toast(esEdicion ? 'Paciente actualizado' : 'Paciente creado', 'exito');
+      detenerCamara();
       cerrarPanel();
       cargarPacientes();
     } catch (err) {
@@ -318,8 +487,15 @@ async function abrirFichaPaciente(id) {
     const paciente = await Api.get(`/api/pacientes/${id}`);
     abrirPanel(`
       <button class="secundario cerrar" onclick="cerrarPanel()">Cerrar</button>
-      <h2>${escapeHtml(paciente.apellido)}, ${escapeHtml(paciente.nombre)}</h2>
-      <p style="color:#667">DNI: ${escapeHtml(paciente.dni) || '-'} · Tel: ${escapeHtml(paciente.telefono) || '-'} · ${escapeHtml(paciente.obra_social) || 'Sin obra social'}</p>
+      <div style="display:flex; align-items:center; gap:14px; margin-bottom:4px;">
+        <div class="foto-paciente-avatar" id="ficha-avatar">
+          <span>${escapeHtml((paciente.nombre || '?').charAt(0).toUpperCase())}</span>
+        </div>
+        <div>
+          <h2 style="margin:0">${escapeHtml(paciente.apellido)}, ${escapeHtml(paciente.nombre)}</h2>
+          <p style="color:#667; margin:4px 0 0;">DNI: ${escapeHtml(paciente.dni) || '-'} · Tel: ${escapeHtml(paciente.telefono) || '-'} · ${escapeHtml(paciente.obra_social) || 'Sin obra social'}</p>
+        </div>
+      </div>
       <div class="tabs">
         <button class="tab-btn activo" data-tab="datos">Datos</button>
         <button class="tab-btn" data-tab="clinica">Historia clinica</button>
@@ -338,6 +514,12 @@ async function abrirFichaPaciente(id) {
     `);
 
     $('#btn-editar-paciente').addEventListener('click', () => abrirFormPaciente(paciente));
+
+    if (paciente.foto) {
+      Api.getBlobUrl(`/api/pacientes/${paciente.id}/foto`).then((url) => {
+        if (url) $('#ficha-avatar').innerHTML = `<img src="${url}" alt="" />`;
+      });
+    }
 
     $$('.tab-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
