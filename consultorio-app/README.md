@@ -80,6 +80,13 @@ Los instaladores quedan en `client/dist/`. Copiá ese instalador y ejecutalo en 
 La primera vez que se abre la app en cada PC, pide la **dirección del servidor** (la IP que anotaste en el
 paso 1, por ejemplo `http://192.168.1.10:4000`). Después de configurarla una vez, la app la recuerda.
 
+### PCs con Windows 7 / 8 / 8.1
+
+El cliente normal (`client/`) usa una versión de Electron que solo corre en Windows 10/11. Para PCs viejas
+con Windows 7, 8 u 8.1, usar en su lugar `client-legacy/`, que es el mismo cliente pero fijado a Electron
+22.3.27 (la última versión con soporte para esos sistemas). Ver `client-legacy/README-LEGACY.md` para más
+detalles y la advertencia de seguridad correspondiente.
+
 ### Problemas comunes al instalar el cliente (Windows)
 
 Si la PC tiene un antivirus corporativo o restricciones de IT, `npm install` puede fallar al instalar
