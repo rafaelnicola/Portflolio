@@ -18,6 +18,7 @@
     "appId": "com.biomedicalcenter.cliente",
     "productName": "Biomedical Center",
     "icon": "build/icon.png",
+    "publish": null,
     "files": [
       "main.js",
       "preload.js",

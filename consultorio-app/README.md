@@ -216,8 +216,26 @@ Una vez configurado, el botón "Enviar por email" en la historia clínica de cad
 
 ## Respaldo de la información
 
-Toda la base de datos vive en un solo archivo: `server/data/consultorio.db` (en la PC servidor). Para hacer
-una copia de seguridad, basta con copiar esa carpeta `data/` a un pendrive o a la nube de tanto en tanto.
+Toda la base de datos vive en un solo archivo: `server/data/consultorio.db` (en la PC servidor), junto con
+la carpeta `server/data/fotos/`. Para hacer una copia de seguridad, basta con copiar esa carpeta `data/` a
+un pendrive o a la nube de tanto en tanto.
+
+### Backup automático semanal
+
+En `server/scripts/` hay un backup automático listo para usar, para no depender de acordarse de hacerlo a
+mano:
+
+1. En la PC servidor, clic derecho sobre `server/scripts/instalar-backup-automatico.bat` → **Ejecutar como
+   administrador**.
+2. Eso deja programada una tarea de Windows que corre todos los domingos a las 22:00: comprime la carpeta
+   `data/` en un `.zip` con la fecha, y borra automáticamente los backups de más de 90 días.
+3. Por defecto el `.zip` se guarda en `Documentos\BackupsConsultorio` de esa misma PC. Se recomienda editar
+   `server/scripts/backup.ps1` con el Bloc de notas y cambiar esa ruta (variable `$destino`) por un pendrive
+   que quede siempre conectado, un disco externo o una carpeta de red — así el backup no se pierde si falla
+   el disco de la PC servidor.
+
+Para probarlo sin esperar al domingo: `schtasks /Run /TN "BiomedicalCenter_BackupSemanal"`. Para
+desinstalarlo: ejecutar `server/scripts/desinstalar-backup-automatico.bat`.
 
 ## Estructura del proyecto
 
