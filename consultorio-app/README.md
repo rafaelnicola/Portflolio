@@ -237,6 +237,20 @@ mano:
 Para probarlo sin esperar al domingo: `schtasks /Run /TN "BiomedicalCenter_BackupSemanal"`. Para
 desinstalarlo: ejecutar `server/scripts/desinstalar-backup-automatico.bat`.
 
+### Inicio automático del servidor con Windows
+
+Para que el servidor arranque solo (por ejemplo después de un corte de luz o un reinicio), sin que nadie
+tenga que ir a hacer doble clic en `iniciar-servidor.bat`:
+
+1. En la PC servidor, clic derecho sobre `server/scripts/instalar-inicio-automatico.bat` → **Ejecutar como
+   administrador**.
+2. Eso deja programado que el servidor arranque minimizado cada vez que se inicia sesión en esa PC.
+3. Si esa PC no la usa nadie para otra cosa, conviene además activar el **inicio de sesión automático** de
+   Windows para el usuario que se use ahí (buscar "netplwiz" en el menú de inicio), así el servidor termina
+   arrancando solo, sin que nadie tenga que escribir ninguna contraseña.
+
+Para desinstalarlo: ejecutar `server/scripts/desinstalar-inicio-automatico.bat`.
+
 ## Estructura del proyecto
 
 ```
