@@ -19,6 +19,10 @@ if %ERRORLEVEL% EQU 0 (
     echo de usuario, o buscar "netplwiz"^), asi el servidor arranca solo despues de un corte de
     echo luz o un reinicio, sin que nadie tenga que escribir la contraseña.
     echo.
+    echo IMPORTANTE: como el servidor arranca en segundo plano, Windows no va a mostrar el cartel
+    echo para permitirlo en el Firewall. Ejecuta tambien "permitir-firewall.bat" ^(como
+    echo Administrador^) para que las demas PCs puedan conectarse.
+    echo.
     echo Para probarlo ahora mismo sin reiniciar, ejecuta:
     echo   schtasks /Run /TN "BiomedicalCenter_ServidorInicio"
 ) else (

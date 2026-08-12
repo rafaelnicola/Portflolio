@@ -49,6 +49,14 @@ configurarlo como servicio de Windows más adelante).
 
 > Sugerencia: asigná una **IP fija** a la PC del servidor en el router, así la dirección no cambia con el tiempo.
 
+### Permitir el acceso desde otras PCs (Firewall de Windows)
+
+La primera vez que el servidor arranca, Windows suele preguntar "¿Permitir acceso a esta app en redes
+privadas?" — hay que aceptarlo. Pero si el servidor se inicia en segundo plano (por ejemplo con la tarea de
+inicio automático, ver más abajo), ese cartel nunca aparece y el Firewall bloquea las conexiones entrantes:
+el sistema funciona en esa misma PC pero las demás PCs no logran conectarse. Para evitarlo, ejecutá una vez
+como Administrador `server/scripts/permitir-firewall.bat`, que abre el puerto 4000 de forma permanente.
+
 ## 2. Instalar el cliente en cada PC
 
 ### Para desarrollo / probar rápido
