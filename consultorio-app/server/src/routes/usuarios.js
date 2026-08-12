@@ -2,6 +2,13 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const db = require('../db');
 const { generarToken, requireAuth, requireRol } = require('../auth');
+const {
+  PERMISOS,
+  permisosDeUsuario,
+  detallePermisosUsuario,
+  otorgarPermisoExtra,
+  quitarPermisoExtra,
+} = require('../permisos');
 
 const router = express.Router();
 
@@ -62,12 +69,13 @@ router.post('/login', (req, res) => {
       username: usuario.username,
       nombre_completo: usuario.nombre_completo,
       rol: usuario.rol,
+      permisos: permisosDeUsuario(usuario),
     },
   });
 });
 
 router.get('/me', requireAuth, (req, res) => {
-  res.json({ usuario: req.usuario });
+  res.json({ usuario: { ...req.usuario, permisos: permisosDeUsuario(req.usuario) } });
 });
 
 router.post('/cambiar-password', requireAuth, (req, res) => {
@@ -153,6 +161,36 @@ router.put('/:id/password', requireAuth, requireRol('admin'), (req, res) => {
   }
   const hash = bcrypt.hashSync(password_nuevo, 10);
   db.prepare('UPDATE usuarios SET password_hash = ? WHERE id = ?').run(hash, req.params.id);
+  res.json({ ok: true });
+});
+
+router.get('/permisos-disponibles', requireAuth, requireRol('admin'), (req, res) => {
+  const lista = Object.entries(PERMISOS).map(([clave, def]) => ({ clave, etiqueta: def.etiqueta }));
+  res.json(lista);
+});
+
+router.get('/:id/permisos', requireAuth, requireRol('admin'), (req, res) => {
+  const usuario = db.prepare('SELECT id, rol FROM usuarios WHERE id = ?').get(req.params.id);
+  if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+  res.json(detallePermisosUsuario(usuario));
+});
+
+router.put('/:id/permisos/:permiso', requireAuth, requireRol('admin'), (req, res) => {
+  const { activo } = req.body || {};
+  const usuario = db.prepare('SELECT id, rol FROM usuarios WHERE id = ?').get(req.params.id);
+  if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+  if (!PERMISOS[req.params.permiso]) return res.status(400).json({ error: 'Permiso invalido' });
+
+  const detalle = detallePermisosUsuario(usuario)[req.params.permiso];
+  if (detalle.porRol) {
+    return res.status(400).json({ error: 'Este permiso ya lo tiene por su rol, no se puede modificar aca' });
+  }
+
+  if (activo) {
+    otorgarPermisoExtra(usuario.id, req.params.permiso);
+  } else {
+    quitarPermisoExtra(usuario.id, req.params.permiso);
+  }
   res.json({ ok: true });
 });
 

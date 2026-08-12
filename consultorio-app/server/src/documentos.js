@@ -14,6 +14,7 @@ const {
   WidthType,
   BorderStyle,
   PageOrientation,
+  Footer,
   convertInchesToTwip,
 } = require('docx');
 
@@ -78,6 +79,42 @@ function nombrePaciente(paciente) {
   return `${paciente.apellido}, ${paciente.nombre}`;
 }
 
+const SIN_BORDE = {
+  top: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+  bottom: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+  left: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+  right: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+};
+
+function piePaginaConsultorio(direccion, telefono) {
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            borders: SIN_BORDE,
+            children: [
+              new Paragraph({
+                children: [new TextRun({ text: direccion || '', size: 16, color: '667788' })],
+              }),
+            ],
+          }),
+          new TableCell({
+            borders: SIN_BORDE,
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [new TextRun({ text: telefono || '', size: 16, color: '667788' })],
+              }),
+            ],
+          }),
+        ],
+      }),
+    ],
+  });
+}
+
 async function generarDocxHistoria(historia, paciente) {
   const doc = new Document({
     sections: [
@@ -118,7 +155,7 @@ async function generarDocxHistoria(historia, paciente) {
   return Packer.toBuffer(doc);
 }
 
-async function generarDocxTratamiento(historia, paciente) {
+async function generarDocxTratamiento(historia, paciente, datosConsultorio = {}) {
   const doc = new Document({
     sections: [
       {
@@ -131,6 +168,11 @@ async function generarDocxTratamiento(historia, paciente) {
             },
             margin: { top: 540, bottom: 540, left: 540, right: 540 },
           },
+        },
+        footers: {
+          default: new Footer({
+            children: [piePaginaConsultorio(datosConsultorio.direccion, datosConsultorio.telefono)],
+          }),
         },
         children: [
           encabezadoLogo(110),

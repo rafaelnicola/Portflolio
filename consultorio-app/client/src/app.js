@@ -40,7 +40,9 @@ async function descargarDocumento(path, nombreSugerido) {
   try {
     const datos = await Api.getBinary(path);
     const resultado = await window.archivoAPI.guardar(nombreSugerido, datos);
-    if (resultado.ok) toast('Documento guardado', 'exito');
+    if (resultado.ok) {
+      toast(resultado.abierto ? 'Documento guardado y abierto' : 'Documento guardado (no se pudo abrir automaticamente)', 'exito');
+    }
   } catch (e) {
     toast(e.message, 'error');
   }
@@ -159,7 +161,10 @@ function cambiarVista(vista) {
   if (vista === 'pacientes') cargarPacientes();
   if (vista === 'turnos') cargarTurnos();
   if (vista === 'usuarios') cargarUsuarios();
-  if (vista === 'configuracion') cargarConfiguracionSmtp();
+  if (vista === 'configuracion') {
+    cargarConfiguracionConsultorio();
+    cargarConfiguracionSmtp();
+  }
 }
 
 /* ---------- Dashboard ---------- */
@@ -204,6 +209,7 @@ async function cargarPacientes() {
 
 function renderTablaPacientes(pacientes) {
   if (!pacientes.length) return '<div class="vacio">No hay pacientes registrados todavia.</div>';
+  const puedeEliminar = usuarioActual.permisos.pacientes_eliminar;
   const filas = pacientes
     .map(
       (p) => `
@@ -214,6 +220,7 @@ function renderTablaPacientes(pacientes) {
         <td>${escapeHtml(p.obra_social) || '-'}</td>
         <td class="acciones">
           <button class="secundario" data-ver="${p.id}">Ver ficha</button>
+          ${puedeEliminar ? `<button class="peligro" data-eliminar-paciente="${p.id}">Eliminar</button>` : ''}
         </td>
       </tr>`
     )
@@ -224,6 +231,18 @@ function renderTablaPacientes(pacientes) {
 function adjuntarEventosPacientes() {
   $$('#pacientes-tabla [data-ver]').forEach((btn) => {
     btn.addEventListener('click', () => abrirFichaPaciente(btn.dataset.ver));
+  });
+  $$('#pacientes-tabla [data-eliminar-paciente]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('¿Eliminar este paciente? Se borran tambien sus turnos e historia clinica.')) return;
+      try {
+        await Api.del(`/api/pacientes/${btn.dataset.eliminarPaciente}`);
+        toast('Paciente eliminado', 'exito');
+        cargarPacientes();
+      } catch (e) {
+        toast(e.message, 'error');
+      }
+    });
   });
 }
 
@@ -339,7 +358,7 @@ async function cargarHistoriaClinica(pacienteId) {
   const cont = $('#tab-clinica');
   if (!cont) return;
   try {
-    const puedeGestionar = usuarioActual.rol === 'admin' || usuarioActual.rol === 'doctor';
+    const puedeGestionar = usuarioActual.permisos.historia_gestionar;
     const historias = await Api.get(`/api/historias/paciente/${pacienteId}`);
     const historiasPorId = new Map(historias.map((h) => [String(h.id), h]));
     cont.innerHTML = `
@@ -504,7 +523,7 @@ async function cargarTurnos() {
 
 function renderTablaTurnos(turnos, { compacto }) {
   if (!turnos.length) return '<div class="vacio">No hay turnos para esta fecha.</div>';
-  const puedeGestionar = usuarioActual.rol === 'admin' || usuarioActual.rol === 'recepcion';
+  const puedeEliminar = usuarioActual.permisos.turnos_eliminar;
   const filas = turnos
     .map(
       (t) => `
@@ -521,10 +540,8 @@ function renderTablaTurnos(turnos, { compacto }) {
           </select>
         </td>
         ${
-          !compacto && puedeGestionar
-            ? `<td class="acciones"><button class="secundario" data-editar-turno="${t.id}">Editar</button><button class="peligro" data-eliminar-turno="${t.id}">Eliminar</button></td>`
-            : compacto
-            ? '<td></td>'
+          !compacto
+            ? `<td class="acciones"><button class="secundario" data-editar-turno="${t.id}">Editar</button>${puedeEliminar ? `<button class="peligro" data-eliminar-turno="${t.id}">Eliminar</button>` : ''}</td>`
             : '<td></td>'
         }
       </tr>`
@@ -721,13 +738,14 @@ function renderTablaUsuarios(usuarios) {
         </td>
         <td>${u.activo ? 'Activo' : 'Inactivo'}</td>
         <td class="acciones">
+          <button class="secundario" data-permisos="${u.id}" data-nombre="${escapeHtml(u.nombre_completo)}">Permisos</button>
           <button class="secundario" data-resetpass="${u.id}">Restablecer contraseña</button>
           <button class="${u.activo ? 'peligro' : ''}" data-toggle="${u.id}" data-valor="${u.activo ? 0 : 1}">${u.activo ? 'Desactivar' : 'Activar'}</button>
         </td>
       </tr>`
     )
     .join('');
-  return `<table><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol / permisos</th><th>Estado</th><th></th></tr></thead><tbody>${filas}</tbody></table>`;
+  return `<table><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol / permisos base</th><th>Estado</th><th></th></tr></thead><tbody>${filas}</tbody></table>`;
 }
 
 function adjuntarEventosUsuarios() {
@@ -743,6 +761,9 @@ function adjuntarEventosUsuarios() {
   });
   $$('[data-resetpass]').forEach((btn) => {
     btn.addEventListener('click', () => abrirFormResetPassword(btn.dataset.resetpass));
+  });
+  $$('[data-permisos]').forEach((btn) => {
+    btn.addEventListener('click', () => abrirPanelPermisos(btn.dataset.permisos, btn.dataset.nombre));
   });
   $$('[data-rol]').forEach((sel) => {
     sel.addEventListener('change', async () => {
@@ -780,6 +801,44 @@ function abrirFormResetPassword(usuarioId) {
   });
 }
 
+async function abrirPanelPermisos(usuarioId, nombreUsuario) {
+  try {
+    const permisos = await Api.get(`/api/usuarios/${usuarioId}/permisos`);
+    abrirPanel(`
+      <button class="secundario cerrar" onclick="cerrarPanel()">Cerrar</button>
+      <h2>Permisos de ${escapeHtml(nombreUsuario)}</h2>
+      <p style="color:#667">
+        Los permisos ya incluidos por el rol de este usuario quedan tildados y no se pueden destildar aca
+        (para eso hay que cambiarle el rol). Los demas los podes prender o apagar vos.
+      </p>
+      <div id="lista-permisos">
+        ${Object.entries(permisos)
+          .map(
+            ([clave, info]) => `
+            <label style="display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--gris-borde);">
+              <input type="checkbox" data-permiso="${clave}" ${info.activo ? 'checked' : ''} ${info.porRol ? 'disabled' : ''} style="width:18px; height:18px;" />
+              <span>${escapeHtml(info.etiqueta)} ${info.porRol ? '<span style="color:#889">(incluido por su rol)</span>' : ''}</span>
+            </label>`
+          )
+          .join('')}
+      </div>
+    `);
+    $$('#lista-permisos [data-permiso]').forEach((chk) => {
+      chk.addEventListener('change', async () => {
+        try {
+          await Api.put(`/api/usuarios/${usuarioId}/permisos/${chk.dataset.permiso}`, { activo: chk.checked });
+          toast('Permiso actualizado', 'exito');
+        } catch (e) {
+          toast(e.message, 'error');
+          chk.checked = !chk.checked;
+        }
+      });
+    });
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
 function abrirFormUsuario() {
   abrirPanel(`
     <button class="secundario cerrar" onclick="cerrarPanel()">Cerrar</button>
@@ -812,6 +871,31 @@ function abrirFormUsuario() {
     }
   });
 }
+
+/* ---------- Datos del consultorio (solo admin) ---------- */
+
+async function cargarConfiguracionConsultorio() {
+  if (usuarioActual.rol !== 'admin') return;
+  try {
+    const config = await Api.get('/api/config/consultorio');
+    const form = $('#form-consultorio');
+    form.direccion.value = config.direccion || '';
+    form.telefono.value = config.telefono || '';
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+$('#form-consultorio').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const datos = Object.fromEntries(new FormData(e.target).entries());
+  try {
+    await Api.put('/api/config/consultorio', datos);
+    toast('Datos del consultorio guardados', 'exito');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
 
 /* ---------- Configuracion SMTP (solo admin) ---------- */
 

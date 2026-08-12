@@ -69,6 +69,12 @@ CREATE TABLE IF NOT EXISTS configuracion (
   valor TEXT
 );
 
+CREATE TABLE IF NOT EXISTS permisos_usuario (
+  usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  permiso TEXT NOT NULL,
+  PRIMARY KEY (usuario_id, permiso)
+);
+
 CREATE INDEX IF NOT EXISTS idx_turnos_fecha ON turnos(fecha);
 CREATE INDEX IF NOT EXISTS idx_turnos_paciente ON turnos(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_historias_paciente ON historias_clinicas(paciente_id);
@@ -116,5 +122,13 @@ function setSetting(clave, valor) {
 
 db.getSetting = getSetting;
 db.setSetting = setSetting;
+
+// Valores por defecto del consultorio (se pueden editar despues desde Configuracion)
+if (getSetting('consultorio_direccion') === null) {
+  setSetting('consultorio_direccion', 'Calle 25 n°16-101 Los Alcazarez');
+}
+if (getSetting('consultorio_telefono') === null) {
+  setSetting('consultorio_telefono', '3053282029');
+}
 
 module.exports = db;

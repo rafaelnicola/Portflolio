@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { requireAuth, requireRol } = require('../auth');
+const { requirePermiso } = require('../permisos');
 const { generarDocxAgenda } = require('../documentos');
 
 const router = express.Router();
@@ -81,7 +82,7 @@ router.put('/:id/estado', (req, res) => {
   res.json({ ok: true });
 });
 
-router.delete('/:id', requireRol('admin', 'recepcion', 'doctor'), (req, res) => {
+router.delete('/:id', requirePermiso('turnos_eliminar'), (req, res) => {
   db.prepare('DELETE FROM turnos WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });

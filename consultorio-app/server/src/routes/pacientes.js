@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { requireAuth, requireRol } = require('../auth');
+const { requirePermiso } = require('../permisos');
 
 const router = express.Router();
 
@@ -117,7 +118,7 @@ router.put('/:id', requireRol('admin', 'recepcion', 'doctor'), (req, res) => {
   res.json({ ok: true });
 });
 
-router.delete('/:id', requireRol('admin'), (req, res) => {
+router.delete('/:id', requirePermiso('pacientes_eliminar'), (req, res) => {
   db.prepare('DELETE FROM pacientes WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });

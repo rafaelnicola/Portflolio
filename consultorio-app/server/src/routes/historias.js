@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { requireAuth, requireRol } = require('../auth');
+const { requirePermiso } = require('../permisos');
 const { generarDocxHistoria, generarDocxTratamiento } = require('../documentos');
 const { generarPdfHistoria } = require('../pdf');
 const { enviarEmailConAdjunto } = require('../mailer');
@@ -41,7 +42,7 @@ router.get('/paciente/:pacienteId', requireRol('admin', 'doctor', 'recepcion'), 
   res.json(historias.map(conEditable));
 });
 
-router.post('/', requireRol('admin', 'doctor'), (req, res) => {
+router.post('/', requirePermiso('historia_gestionar'), (req, res) => {
   const { paciente_id, motivo_consulta, presion_arterial, peso, diagnostico, tratamiento, observaciones } = req.body || {};
   if (!paciente_id) return res.status(400).json({ error: 'Falta el paciente' });
   const info = db
@@ -63,7 +64,7 @@ router.post('/', requireRol('admin', 'doctor'), (req, res) => {
   res.status(201).json({ id: info.lastInsertRowid });
 });
 
-router.put('/:id', requireRol('admin', 'doctor'), (req, res) => {
+router.put('/:id', requirePermiso('historia_gestionar'), (req, res) => {
   const { motivo_consulta, presion_arterial, peso, diagnostico, tratamiento, observaciones } = req.body || {};
   const existente = db.prepare('SELECT id, fecha FROM historias_clinicas WHERE id = ?').get(req.params.id);
   if (!existente) return res.status(404).json({ error: 'Registro no encontrado' });
@@ -111,7 +112,11 @@ router.get('/:id/exportar-tratamiento-word', requireRol('admin', 'doctor', 'rece
   const datos = obtenerHistoriaConPaciente(req.params.id);
   if (!datos) return res.status(404).json({ error: 'Registro no encontrado' });
   try {
-    const buffer = await generarDocxTratamiento(datos.historia, datos.paciente);
+    const datosConsultorio = {
+      direccion: db.getSetting('consultorio_direccion'),
+      telefono: db.getSetting('consultorio_telefono'),
+    };
+    const buffer = await generarDocxTratamiento(datos.historia, datos.paciente, datosConsultorio);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="tratamiento-${req.params.id}.docx"`);
     res.send(Buffer.from(buffer));

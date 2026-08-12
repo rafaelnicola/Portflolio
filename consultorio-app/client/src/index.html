@@ -115,6 +115,18 @@
 
       <!-- Configuracion (admin) -->
       <section id="vista-configuracion" class="vista oculto">
+        <h2>Datos del consultorio</h2>
+        <p style="color:#667; max-width:520px;">
+          Aparecen en el pie de pagina de la formula medica que se exporta a Word.
+        </p>
+        <div style="max-width:420px; margin-bottom:32px;">
+          <form id="form-consultorio">
+            <div class="campo"><label>Direccion</label><input name="direccion" placeholder="Calle 25 n°16-101 Los Alcazarez" /></div>
+            <div class="campo"><label>Telefono</label><input name="telefono" placeholder="3053282029" /></div>
+            <button type="submit" style="width:100%">Guardar datos del consultorio</button>
+          </form>
+        </div>
+
         <h2>Configuracion de correo (SMTP)</h2>
         <p style="color:#667; max-width:520px;">
           Cargá los datos del correo que se va a usar para enviar historias clinicas por email.

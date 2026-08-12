@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const Store = require('electron-store');
@@ -42,7 +42,11 @@ ipcMain.handle('archivo:guardar', async (event, { nombreSugerido, datos }) => {
   });
   if (canceled || !filePath) return { ok: false };
   fs.writeFileSync(filePath, Buffer.from(datos));
-  return { ok: true, filePath };
+  const errorAlAbrir = await shell.openPath(filePath);
+  if (errorAlAbrir) {
+    console.error('No se pudo abrir el archivo automaticamente:', errorAlAbrir);
+  }
+  return { ok: true, filePath, abierto: !errorAlAbrir };
 });
 
 app.whenReady().then(createWindow);

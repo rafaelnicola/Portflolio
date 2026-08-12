@@ -140,32 +140,40 @@ lista desplegable — pensado para consultorios con muchos pacientes registrados
 | Acción                                    | Recepción | Doctor/a | Admin |
 |--------------------------------------------|:---------:|:--------:|:-----:|
 | Ver / crear / editar pacientes              | ✅        | ✅       | ✅    |
-| Agendar / modificar / cancelar turnos       | ✅        | ✅       | ✅    |
-| Ver / cargar historia clínica completa      | ❌        | ✅       | ✅    |
-| Exportar / imprimir solo el tratamiento     | ✅        | ✅       | ✅    |
-| Enviar historia clínica por email           | ❌        | ✅       | ✅    |
-| Cambiar el rol de otros usuarios            | ❌        | ❌       | ✅    |
-| Configurar el envío de email (SMTP)         | ❌        | ❌       | ✅    |
+| Ver historia clínica completa               | ✅        | ✅       | ✅    |
+| Exportar / enviar por email la historia      | ✅        | ✅       | ✅    |
+| Agendar / modificar turnos                   | ✅        | ✅       | ✅    |
+| Crear y editar valoraciones (historia clínica)| ❌ (*)   | ✅       | ✅    |
+| Eliminar pacientes                            | ❌ (*)   | ❌ (*)   | ✅    |
+| Eliminar turnos                               | ✅        | ✅       | ✅    |
+| Cambiar el rol de otros usuarios              | ❌        | ❌       | ✅    |
+| Configurar email / datos del consultorio      | ❌        | ❌       | ✅    |
 
-Recepción **no** ve diagnóstico, presión arterial, peso ni observaciones — por confidencialidad, esos datos
-quedan reservados a doctor/a y admin. Solo puede ver y exportar el campo de tratamiento, para imprimir la
-fórmula médica.
+(*) Estos permisos los puede activar o desactivar el admin **individualmente por usuario**, sin tocar
+código: Usuarios → botón **Permisos** en la fila de cada usuario. Por ejemplo, se le puede dar a una
+recepcionista puntual el permiso de cargar historia clínica sin cambiarle el rol. Los permisos que ya vienen
+incluidos por el rol (marcados arriba con ✅ liso) aparecen tildados y bloqueados en esa pantalla — para
+sacarlos hay que cambiar el rol del usuario, no se puede hacer ahí.
 
 ## Exportar e imprimir documentos
 
-Desde la ficha del paciente (pestaña "Historia clínica" o "Tratamientos") y desde la Agenda, hay botones para
-generar documentos **Word (.docx)**, editables e imprimibles:
+Desde la ficha del paciente (pestaña "Historia clínica") y desde la Agenda, hay botones para generar
+documentos **Word (.docx)**, editables e imprimibles. Al exportar, la app **guarda el archivo donde indiques
+y lo abre automáticamente** (con Word, o el programa que tengas asociado a `.docx`).
 
-- **Exportar a Word**: la historia clínica completa de una consulta (doctor/a y admin).
+- **Exportar a Word**: la historia clínica completa de una consulta, con el logo del consultorio arriba.
 - **Exportar tratamiento (media carta)**: solo el tratamiento, en una página de tamaño media carta
-  horizontal (8.5" x 5.5"), lista para imprimir como fórmula médica (todos los roles).
-- **Enviar por email**: envía la historia clínica completa como adjunto Word al email que indiques
-  (doctor/a y admin; requiere configurar el correo primero, ver más abajo).
+  horizontal (8.5" x 5.5"), con el logo arriba y la dirección/teléfono del consultorio abajo — lista para
+  imprimir como fórmula médica.
+- **Enviar por email**: envía la historia clínica completa como PDF adjunto al email que indiques (requiere
+  configurar el correo primero, ver más abajo).
 - **Descargar lista (Word)**, en la Agenda: exporta la lista de turnos del día seleccionado, con nombre y
   teléfono de cada paciente, en formato tabla — pensada para imprimir y usar al llamar a los pacientes.
 
-Al hacer clic en cualquiera de estos botones se abre el diálogo nativo de Windows para elegir dónde guardar
-el archivo.
+## Datos del consultorio (dirección y teléfono)
+
+Como admin, en **Configuración** → "Datos del consultorio" podés cambiar la dirección y el teléfono que
+aparecen en el pie de página de la fórmula médica, sin tocar código.
 
 ## Configurar el envío de email
 
