@@ -11,17 +11,13 @@ router.get('/consultorio', (req, res) => {
   res.json({
     direccion: db.getSetting('consultorio_direccion') || '',
     telefono: db.getSetting('consultorio_telefono') || '',
-    medico_nombre: db.getSetting('consultorio_medico_nombre') || '',
-    medico_especialidad: db.getSetting('consultorio_medico_especialidad') || '',
   });
 });
 
 router.put('/consultorio', (req, res) => {
-  const { direccion, telefono, medico_nombre, medico_especialidad } = req.body || {};
+  const { direccion, telefono } = req.body || {};
   db.setSetting('consultorio_direccion', direccion || '');
   db.setSetting('consultorio_telefono', telefono || '');
-  db.setSetting('consultorio_medico_nombre', medico_nombre || '');
-  db.setSetting('consultorio_medico_especialidad', medico_especialidad || '');
   res.json({ ok: true });
 });
 

@@ -135,11 +135,5 @@ if (getSetting('consultorio_direccion') === null) {
 if (getSetting('consultorio_telefono') === null) {
   setSetting('consultorio_telefono', '4336041 - 3053282029');
 }
-if (getSetting('consultorio_medico_nombre') === null) {
-  setSetting('consultorio_medico_nombre', 'Dr. Rafael de J. Nicola A. M.D');
-}
-if (getSetting('consultorio_medico_especialidad') === null) {
-  setSetting('consultorio_medico_especialidad', 'Medicina Alternativa – Bioregulación');
-}
 
 module.exports = db;

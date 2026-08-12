@@ -1063,8 +1063,6 @@ async function cargarConfiguracionConsultorio() {
     const form = $('#form-consultorio');
     form.direccion.value = config.direccion || '';
     form.telefono.value = config.telefono || '';
-    form.medico_nombre.value = config.medico_nombre || '';
-    form.medico_especialidad.value = config.medico_especialidad || '';
   } catch (e) {
     toast(e.message, 'error');
   }

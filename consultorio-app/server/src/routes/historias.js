@@ -115,8 +115,6 @@ router.get('/:id/exportar-tratamiento-word', requireRol('admin', 'doctor', 'rece
     const datosConsultorio = {
       direccion: db.getSetting('consultorio_direccion'),
       telefono: db.getSetting('consultorio_telefono'),
-      medicoNombre: db.getSetting('consultorio_medico_nombre'),
-      medicoEspecialidad: db.getSetting('consultorio_medico_especialidad'),
     };
     const buffer = await generarDocxTratamiento(datos.historia, datos.paciente, datosConsultorio);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');

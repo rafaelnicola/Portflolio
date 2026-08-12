@@ -195,30 +195,7 @@ async function generarDocxTratamiento(historia, paciente, datosConsultorio = {})
           }),
         },
         children: [
-          encabezadoLogo(85, { soloMarca: true }),
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 20 },
-            children: [
-              new TextRun({
-                text: datosConsultorio.medicoNombre || '',
-                font: 'Monotype Corsiva',
-                size: 46,
-                underline: {},
-              }),
-            ],
-          }),
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 200 },
-            children: [
-              new TextRun({
-                text: datosConsultorio.medicoEspecialidad || '',
-                font: 'Arial',
-                size: 17,
-              }),
-            ],
-          }),
+          encabezadoLogo(130),
           new Paragraph({
             spacing: { after: 260 },
             children: [
