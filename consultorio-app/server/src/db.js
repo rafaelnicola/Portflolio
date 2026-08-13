@@ -102,6 +102,19 @@ agregarColumnaSiFalta('pacientes', 'estado_civil', 'TEXT');
 agregarColumnaSiFalta('pacientes', 'foto', 'TEXT');
 agregarColumnaSiFalta('historias_clinicas', 'presion_arterial', 'TEXT');
 agregarColumnaSiFalta('historias_clinicas', 'peso', 'TEXT');
+agregarColumnaSiFalta('historias_clinicas', 'antecedentes_heredo_familiares', 'TEXT');
+agregarColumnaSiFalta('historias_clinicas', 'antecedentes_personales_no_patologicos', 'TEXT');
+agregarColumnaSiFalta('historias_clinicas', 'antecedentes_personales_patologicos', 'TEXT');
+agregarColumnaSiFalta('historias_clinicas', 'enfermedad_actual', 'TEXT');
+agregarColumnaSiFalta('historias_clinicas', 'cuadro_clinico', 'TEXT');
+agregarColumnaSiFalta('historias_clinicas', 'sintomas_generales', 'TEXT');
+agregarColumnaSiFalta('historias_clinicas', 'habitus_exterior', 'TEXT');
+agregarColumnaSiFalta('historias_clinicas', 'glucometria', 'TEXT');
+agregarColumnaSiFalta('historias_clinicas', 'imc', 'TEXT');
+agregarColumnaSiFalta('historias_clinicas', 'perimetro_abdominal', 'TEXT');
+agregarColumnaSiFalta('historias_clinicas', 'talla', 'TEXT');
+agregarColumnaSiFalta('historias_clinicas', 'exploracion_fisica', 'TEXT');
+agregarColumnaSiFalta('historias_clinicas', 'examenes_laboratorio', 'TEXT');
 
 const userCount = db.prepare('SELECT COUNT(*) AS n FROM usuarios').get().n;
 if (userCount === 0) {

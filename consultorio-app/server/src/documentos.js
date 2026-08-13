@@ -160,10 +160,26 @@ async function generarDocxHistoria(historia, paciente) {
           campo('Fecha y hora', formatearFecha(historia.fecha)),
           campo('Doctor/a', historia.doctor_nombre),
           campo('Motivo de consulta', historia.motivo_consulta),
+          campo('Antecedentes heredo familiares', historia.antecedentes_heredo_familiares),
+          campo('Antecedentes personales no patológicos', historia.antecedentes_personales_no_patologicos),
+          campo('Antecedentes personales patológicos', historia.antecedentes_personales_patologicos),
+          campo('Enfermedad actual', historia.enfermedad_actual),
+          campo('Cuadro clínico', historia.cuadro_clinico),
+          campo('Síntomas generales', historia.sintomas_generales),
+          campo('Hábitus exterior', historia.habitus_exterior),
+          new Paragraph({ text: ' ' }),
+          new Paragraph({ text: 'Signos vitales', heading: HeadingLevel.HEADING_2 }),
           campo('Presión arterial', historia.presion_arterial),
           campo('Peso', historia.peso),
+          campo('Glucometría', historia.glucometria),
+          campo('IMC', historia.imc),
+          campo('Perímetro abdominal', historia.perimetro_abdominal),
+          campo('Talla', historia.talla),
+          new Paragraph({ text: ' ' }),
+          campo('Exploración física', historia.exploracion_fisica),
           campo('Diagnóstico', historia.diagnostico),
           campo('Tratamiento', historia.tratamiento),
+          campo('Exámenes de laboratorio', historia.examenes_laboratorio),
           campo('Observaciones', historia.observaciones),
         ],
       },
@@ -175,7 +191,7 @@ async function generarDocxHistoria(historia, paciente) {
 const FUENTE_CUERPO = 'Courier New';
 const TAMANO_CUERPO = 19; // 9.5pt (docx usa medios puntos)
 
-async function generarDocxTratamiento(historia, paciente, datosConsultorio = {}) {
+async function generarDocxFormula(historia, paciente, datosConsultorio = {}, contenido = '') {
   const doc = new Document({
     sections: [
       {
@@ -208,7 +224,7 @@ async function generarDocxTratamiento(historia, paciente, datosConsultorio = {})
               new TextRun({ text: formatearFechaCorta(historia.fecha), font: FUENTE_CUERPO, size: TAMANO_CUERPO }),
             ],
           }),
-          ...String(historia.tratamiento || '')
+          ...String(contenido || '')
             .split('\n')
             .map(
               (linea) =>
@@ -222,6 +238,14 @@ async function generarDocxTratamiento(historia, paciente, datosConsultorio = {})
     ],
   });
   return Packer.toBuffer(doc);
+}
+
+function generarDocxTratamiento(historia, paciente, datosConsultorio = {}) {
+  return generarDocxFormula(historia, paciente, datosConsultorio, historia.tratamiento);
+}
+
+function generarDocxExamenes(historia, paciente, datosConsultorio = {}) {
+  return generarDocxFormula(historia, paciente, datosConsultorio, historia.examenes_laboratorio);
 }
 
 async function generarDocxAgenda(turnos, fecha) {
@@ -273,4 +297,4 @@ async function generarDocxAgenda(turnos, fecha) {
   return Packer.toBuffer(doc);
 }
 
-module.exports = { generarDocxHistoria, generarDocxTratamiento, generarDocxAgenda };
+module.exports = { generarDocxHistoria, generarDocxTratamiento, generarDocxExamenes, generarDocxAgenda };

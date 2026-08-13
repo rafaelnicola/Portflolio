@@ -13,6 +13,12 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+// Devuelve un <div> con el campo solo si tiene contenido; si no, no muestra nada.
+function campoOpcional(etiqueta, valor) {
+  if (!valor) return '';
+  return `<div><strong>${escapeHtml(etiqueta)}:</strong> ${escapeHtml(valor)}</div>`;
+}
+
 // La historia clinica guarda h.fecha en UTC (datetime('now') de SQLite);
 // esta funcion la muestra convertida a la hora local de la PC.
 function formatearFecha(fechaUtcTexto) {
@@ -554,16 +560,30 @@ async function cargarHistoriaClinica(pacienteId) {
               <div class="tarjeta-registro">
                 <div class="fecha">${escapeHtml(formatearFecha(h.fecha))} ${h.editable ? '' : '<span style="color:#a12b2b; font-weight:600;">· Bloqueada (mas de 48hs)</span>'}</div>
                 <div><strong>Motivo:</strong> ${escapeHtml(h.motivo_consulta) || '-'}</div>
+                ${campoOpcional('Antecedentes heredo familiares', h.antecedentes_heredo_familiares)}
+                ${campoOpcional('Antecedentes personales no patologicos', h.antecedentes_personales_no_patologicos)}
+                ${campoOpcional('Antecedentes personales patologicos', h.antecedentes_personales_patologicos)}
+                ${campoOpcional('Enfermedad actual', h.enfermedad_actual)}
+                ${campoOpcional('Cuadro clinico', h.cuadro_clinico)}
+                ${campoOpcional('Sintomas generales', h.sintomas_generales)}
+                ${campoOpcional('Habitus exterior', h.habitus_exterior)}
                 <div><strong>Presion arterial:</strong> ${escapeHtml(h.presion_arterial) || '-'}</div>
                 <div><strong>Peso:</strong> ${escapeHtml(h.peso) || '-'}</div>
+                ${campoOpcional('Glucometria', h.glucometria)}
+                ${campoOpcional('IMC', h.imc)}
+                ${campoOpcional('Perimetro abdominal', h.perimetro_abdominal)}
+                ${campoOpcional('Talla', h.talla)}
+                ${campoOpcional('Exploracion fisica', h.exploracion_fisica)}
                 <div><strong>Diagnostico:</strong> ${escapeHtml(h.diagnostico) || '-'}</div>
                 <div><strong>Tratamiento:</strong> ${escapeHtml(h.tratamiento) || '-'}</div>
+                ${campoOpcional('Examenes de laboratorio', h.examenes_laboratorio)}
                 ${h.observaciones ? `<div><strong>Observaciones:</strong> ${escapeHtml(h.observaciones)}</div>` : ''}
                 <div class="doctor">Dr./Dra. ${escapeHtml(h.doctor_nombre) || '-'}</div>
                 <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
                   ${puedeGestionar && h.editable ? `<button class="secundario" data-editar-historia="${h.id}">Editar</button>` : ''}
                   <button class="secundario" data-exportar-historia="${h.id}">Exportar a Word</button>
-                  <button class="secundario" data-exportar-tratamiento="${h.id}">Exportar tratamiento (media carta)</button>
+                  <button class="secundario" data-exportar-tratamiento="${h.id}">Exportar tratamiento (para imprimir)</button>
+                  <button class="secundario" data-exportar-examenes="${h.id}">Exportar examenes (para imprimir)</button>
                   <button class="secundario" data-email-historia="${h.id}">Enviar por email</button>
                 </div>
               </div>`
@@ -597,6 +617,14 @@ async function cargarHistoriaClinica(pacienteId) {
         )
       );
     });
+    $$('#tab-clinica [data-exportar-examenes]').forEach((btn) => {
+      btn.addEventListener('click', () =>
+        descargarDocumento(
+          `/api/historias/${btn.dataset.exportarExamenes}/exportar-examenes-word`,
+          `examenes-${btn.dataset.exportarExamenes}.docx`
+        )
+      );
+    });
     $$('#tab-clinica [data-email-historia]').forEach((btn) => {
       btn.addEventListener('click', () => abrirFormEnviarEmail(btn.dataset.emailHistoria, pacienteId));
     });
@@ -620,12 +648,26 @@ function abrirFormHistoria(pacienteId, historiaExistente) {
     </p>
     <form id="form-historia">
       <div class="campo"><label>Motivo de consulta</label><textarea name="motivo_consulta">${escapeHtml(historiaExistente?.motivo_consulta)}</textarea></div>
+      <div class="campo"><label>Antecedentes heredo familiares</label><textarea name="antecedentes_heredo_familiares">${escapeHtml(historiaExistente?.antecedentes_heredo_familiares)}</textarea></div>
+      <div class="campo"><label>Antecedentes personales no patologicos</label><textarea name="antecedentes_personales_no_patologicos">${escapeHtml(historiaExistente?.antecedentes_personales_no_patologicos)}</textarea></div>
+      <div class="campo"><label>Antecedentes personales patologicos</label><textarea name="antecedentes_personales_patologicos">${escapeHtml(historiaExistente?.antecedentes_personales_patologicos)}</textarea></div>
+      <div class="campo"><label>Enfermedad actual</label><textarea name="enfermedad_actual">${escapeHtml(historiaExistente?.enfermedad_actual)}</textarea></div>
+      <div class="campo"><label>Cuadro clinico</label><textarea name="cuadro_clinico">${escapeHtml(historiaExistente?.cuadro_clinico)}</textarea></div>
+      <div class="campo"><label>Sintomas generales</label><textarea name="sintomas_generales">${escapeHtml(historiaExistente?.sintomas_generales)}</textarea></div>
+      <div class="campo"><label>Habitus exterior</label><textarea name="habitus_exterior">${escapeHtml(historiaExistente?.habitus_exterior)}</textarea></div>
+      <h3 style="margin-bottom:6px">Signos vitales</h3>
       <div class="grid-2">
         <div class="campo"><label>Presion arterial</label><input name="presion_arterial" placeholder="Ej: 120/80" value="${escapeHtml(historiaExistente?.presion_arterial)}" /></div>
         <div class="campo"><label>Peso</label><input name="peso" placeholder="Ej: 70kg" value="${escapeHtml(historiaExistente?.peso)}" /></div>
+        <div class="campo"><label>Glucometria</label><input name="glucometria" value="${escapeHtml(historiaExistente?.glucometria)}" /></div>
+        <div class="campo"><label>IMC</label><input name="imc" value="${escapeHtml(historiaExistente?.imc)}" /></div>
+        <div class="campo"><label>Perimetro abdominal</label><input name="perimetro_abdominal" value="${escapeHtml(historiaExistente?.perimetro_abdominal)}" /></div>
+        <div class="campo"><label>Talla</label><input name="talla" value="${escapeHtml(historiaExistente?.talla)}" /></div>
       </div>
+      <div class="campo"><label>Exploracion fisica</label><textarea name="exploracion_fisica">${escapeHtml(historiaExistente?.exploracion_fisica)}</textarea></div>
       <div class="campo"><label>Diagnostico</label><textarea name="diagnostico">${escapeHtml(historiaExistente?.diagnostico)}</textarea></div>
       <div class="campo"><label>Tratamiento</label><textarea name="tratamiento">${escapeHtml(historiaExistente?.tratamiento)}</textarea></div>
+      <div class="campo"><label>Examenes de laboratorio</label><textarea name="examenes_laboratorio">${escapeHtml(historiaExistente?.examenes_laboratorio)}</textarea></div>
       <div class="campo"><label>Observaciones</label><textarea name="observaciones">${escapeHtml(historiaExistente?.observaciones)}</textarea></div>
       <button type="submit" style="width:100%">${esEdicion ? 'Guardar cambios' : 'Guardar'}</button>
     </form>

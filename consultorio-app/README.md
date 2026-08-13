@@ -191,9 +191,13 @@ documentos **Word (.docx)**, editables e imprimibles. Al exportar, la app **guar
 y lo abre automáticamente** (con Word, o el programa que tengas asociado a `.docx`).
 
 - **Exportar a Word**: la historia clínica completa de una consulta, con el logo del consultorio arriba.
-- **Exportar tratamiento (media carta)**: solo el tratamiento, en una página de tamaño media carta
-  horizontal (8.5" x 5.5"), en formato Courier New 9.5 — con el logo del consultorio como membrete arriba, y
-  la dirección/teléfonos del consultorio abajo. Lista para imprimir como fórmula médica.
+- **Exportar tratamiento**: solo el tratamiento, en hoja carta vertical, en formato Courier New 9.5 — con el
+  logo del consultorio como membrete arriba, y la dirección/teléfonos del consultorio en un pie de página
+  ubicado a 15cm del borde inferior (pensado para imprimir en una hoja media carta). Lista para imprimir
+  como fórmula médica.
+- **Exportar exámenes**: igual al botón anterior, pero con el contenido del campo "Exámenes de laboratorio"
+  en vez del tratamiento — para poder entregar por separado la fórmula del tratamiento y la orden de
+  exámenes.
 - **Enviar por email**: envía la historia clínica completa como PDF adjunto al email que indiques (requiere
   configurar el correo primero, ver más abajo).
 - **Descargar lista (Word)**, en la Agenda: exporta la lista de turnos del día seleccionado, con nombre y

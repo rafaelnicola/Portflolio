@@ -2,7 +2,7 @@ const express = require('express');
 const db = require('../db');
 const { requireAuth, requireRol } = require('../auth');
 const { requirePermiso } = require('../permisos');
-const { generarDocxHistoria, generarDocxTratamiento } = require('../documentos');
+const { generarDocxHistoria, generarDocxTratamiento, generarDocxExamenes } = require('../documentos');
 const { generarPdfHistoria } = require('../pdf');
 const { enviarEmailConAdjunto } = require('../mailer');
 
@@ -42,30 +42,43 @@ router.get('/paciente/:pacienteId', requireRol('admin', 'doctor', 'recepcion'), 
   res.json(historias.map(conEditable));
 });
 
+const CAMPOS_HISTORIA = [
+  'motivo_consulta',
+  'antecedentes_heredo_familiares',
+  'antecedentes_personales_no_patologicos',
+  'antecedentes_personales_patologicos',
+  'enfermedad_actual',
+  'cuadro_clinico',
+  'sintomas_generales',
+  'habitus_exterior',
+  'presion_arterial',
+  'peso',
+  'glucometria',
+  'imc',
+  'perimetro_abdominal',
+  'talla',
+  'exploracion_fisica',
+  'diagnostico',
+  'tratamiento',
+  'examenes_laboratorio',
+  'observaciones',
+];
+
 router.post('/', requirePermiso('historia_gestionar'), (req, res) => {
-  const { paciente_id, motivo_consulta, presion_arterial, peso, diagnostico, tratamiento, observaciones } = req.body || {};
+  const { paciente_id } = req.body || {};
   if (!paciente_id) return res.status(400).json({ error: 'Falta el paciente' });
+  const valores = CAMPOS_HISTORIA.map((campo) => req.body[campo] || null);
   const info = db
     .prepare(
       `INSERT INTO historias_clinicas
-       (paciente_id, doctor_id, motivo_consulta, presion_arterial, peso, diagnostico, tratamiento, observaciones)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+       (paciente_id, doctor_id, ${CAMPOS_HISTORIA.join(', ')})
+       VALUES (?, ?, ${CAMPOS_HISTORIA.map(() => '?').join(', ')})`
     )
-    .run(
-      paciente_id,
-      req.usuario.id,
-      motivo_consulta || null,
-      presion_arterial || null,
-      peso || null,
-      diagnostico || null,
-      tratamiento || null,
-      observaciones || null
-    );
+    .run(paciente_id, req.usuario.id, ...valores);
   res.status(201).json({ id: info.lastInsertRowid });
 });
 
 router.put('/:id', requirePermiso('historia_gestionar'), (req, res) => {
-  const { motivo_consulta, presion_arterial, peso, diagnostico, tratamiento, observaciones } = req.body || {};
   const existente = db.prepare('SELECT id, fecha FROM historias_clinicas WHERE id = ?').get(req.params.id);
   if (!existente) return res.status(404).json({ error: 'Registro no encontrado' });
   if (horasTranscurridas(existente.fecha) > HORAS_LIMITE_EDICION) {
@@ -73,19 +86,10 @@ router.put('/:id', requirePermiso('historia_gestionar'), (req, res) => {
       error: `Esta valoracion ya no se puede modificar: pasaron mas de ${HORAS_LIMITE_EDICION} horas desde que se creo. Cargala como una nueva valoracion.`,
     });
   }
+  const valores = CAMPOS_HISTORIA.map((campo) => req.body[campo] || null);
   db.prepare(
-    `UPDATE historias_clinicas
-     SET motivo_consulta = ?, presion_arterial = ?, peso = ?, diagnostico = ?, tratamiento = ?, observaciones = ?
-     WHERE id = ?`
-  ).run(
-    motivo_consulta || null,
-    presion_arterial || null,
-    peso || null,
-    diagnostico || null,
-    tratamiento || null,
-    observaciones || null,
-    req.params.id
-  );
+    `UPDATE historias_clinicas SET ${CAMPOS_HISTORIA.map((campo) => `${campo} = ?`).join(', ')} WHERE id = ?`
+  ).run(...valores, req.params.id);
   res.json({ ok: true });
 });
 
@@ -119,6 +123,24 @@ router.get('/:id/exportar-tratamiento-word', requireRol('admin', 'doctor', 'rece
     const buffer = await generarDocxTratamiento(datos.historia, datos.paciente, datosConsultorio);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="tratamiento-${req.params.id}.docx"`);
+    res.send(Buffer.from(buffer));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'No se pudo generar el documento' });
+  }
+});
+
+router.get('/:id/exportar-examenes-word', requireRol('admin', 'doctor', 'recepcion'), async (req, res) => {
+  const datos = obtenerHistoriaConPaciente(req.params.id);
+  if (!datos) return res.status(404).json({ error: 'Registro no encontrado' });
+  try {
+    const datosConsultorio = {
+      direccion: db.getSetting('consultorio_direccion'),
+      telefono: db.getSetting('consultorio_telefono'),
+    };
+    const buffer = await generarDocxExamenes(datos.historia, datos.paciente, datosConsultorio);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="examenes-${req.params.id}.docx"`);
     res.send(Buffer.from(buffer));
   } catch (err) {
     console.error(err);
