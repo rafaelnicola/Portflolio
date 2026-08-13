@@ -182,11 +182,14 @@ async function generarDocxTratamiento(historia, paciente, datosConsultorio = {})
         properties: {
           page: {
             size: {
-              orientation: PageOrientation.LANDSCAPE,
-              width: convertInchesToTwip(5.5),
-              height: convertInchesToTwip(8.5),
+              orientation: PageOrientation.PORTRAIT,
+              width: convertInchesToTwip(8.5),
+              height: convertInchesToTwip(11),
             },
-            margin: { top: 500, bottom: 500, left: 600, right: 600 },
+            // El pie de pagina queda a 15cm del borde inferior de la hoja (~8504 twips).
+            // El margen inferior del cuerpo se iguala a esa distancia para que el texto
+            // no se superponga con el pie de pagina.
+            margin: { top: 720, bottom: 8504, left: 900, right: 900, footer: 8504 },
           },
         },
         footers: {
