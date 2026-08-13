@@ -560,13 +560,10 @@ async function cargarHistoriaClinica(pacienteId) {
               <div class="tarjeta-registro">
                 <div class="fecha">${escapeHtml(formatearFecha(h.fecha))} ${h.editable ? '' : '<span style="color:#a12b2b; font-weight:600;">· Bloqueada (mas de 48hs)</span>'}</div>
                 <div><strong>Motivo:</strong> ${escapeHtml(h.motivo_consulta) || '-'}</div>
+                ${campoOpcional('Enfermedad actual', h.enfermedad_actual)}
                 ${campoOpcional('Antecedentes heredo familiares', h.antecedentes_heredo_familiares)}
                 ${campoOpcional('Antecedentes personales no patologicos', h.antecedentes_personales_no_patologicos)}
                 ${campoOpcional('Antecedentes personales patologicos', h.antecedentes_personales_patologicos)}
-                ${campoOpcional('Enfermedad actual', h.enfermedad_actual)}
-                ${campoOpcional('Cuadro clinico', h.cuadro_clinico)}
-                ${campoOpcional('Sintomas generales', h.sintomas_generales)}
-                ${campoOpcional('Habitus exterior', h.habitus_exterior)}
                 <div><strong>Presion arterial:</strong> ${escapeHtml(h.presion_arterial) || '-'}</div>
                 <div><strong>Peso:</strong> ${escapeHtml(h.peso) || '-'}</div>
                 ${campoOpcional('Glucometria', h.glucometria)}
@@ -648,13 +645,10 @@ function abrirFormHistoria(pacienteId, historiaExistente) {
     </p>
     <form id="form-historia">
       <div class="campo"><label>Motivo de consulta</label><textarea name="motivo_consulta">${escapeHtml(historiaExistente?.motivo_consulta)}</textarea></div>
+      <div class="campo"><label>Enfermedad actual</label><textarea name="enfermedad_actual">${escapeHtml(historiaExistente?.enfermedad_actual)}</textarea></div>
       <div class="campo"><label>Antecedentes heredo familiares</label><textarea name="antecedentes_heredo_familiares">${escapeHtml(historiaExistente?.antecedentes_heredo_familiares)}</textarea></div>
       <div class="campo"><label>Antecedentes personales no patologicos</label><textarea name="antecedentes_personales_no_patologicos">${escapeHtml(historiaExistente?.antecedentes_personales_no_patologicos)}</textarea></div>
       <div class="campo"><label>Antecedentes personales patologicos</label><textarea name="antecedentes_personales_patologicos">${escapeHtml(historiaExistente?.antecedentes_personales_patologicos)}</textarea></div>
-      <div class="campo"><label>Enfermedad actual</label><textarea name="enfermedad_actual">${escapeHtml(historiaExistente?.enfermedad_actual)}</textarea></div>
-      <div class="campo"><label>Cuadro clinico</label><textarea name="cuadro_clinico">${escapeHtml(historiaExistente?.cuadro_clinico)}</textarea></div>
-      <div class="campo"><label>Sintomas generales</label><textarea name="sintomas_generales">${escapeHtml(historiaExistente?.sintomas_generales)}</textarea></div>
-      <div class="campo"><label>Habitus exterior</label><textarea name="habitus_exterior">${escapeHtml(historiaExistente?.habitus_exterior)}</textarea></div>
       <h3 style="margin-bottom:6px">Signos vitales</h3>
       <div class="grid-2">
         <div class="campo"><label>Presion arterial</label><input name="presion_arterial" placeholder="Ej: 120/80" value="${escapeHtml(historiaExistente?.presion_arterial)}" /></div>

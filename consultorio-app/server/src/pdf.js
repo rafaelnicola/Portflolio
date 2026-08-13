@@ -68,13 +68,10 @@ function generarPdfHistoria(historia, paciente) {
     campo(doc, 'Fecha y hora', formatearFecha(historia.fecha));
     campo(doc, 'Doctor/a', historia.doctor_nombre);
     campo(doc, 'Motivo de consulta', historia.motivo_consulta);
+    campo(doc, 'Enfermedad actual', historia.enfermedad_actual);
     campo(doc, 'Antecedentes heredo familiares', historia.antecedentes_heredo_familiares);
     campo(doc, 'Antecedentes personales no patológicos', historia.antecedentes_personales_no_patologicos);
     campo(doc, 'Antecedentes personales patológicos', historia.antecedentes_personales_patologicos);
-    campo(doc, 'Enfermedad actual', historia.enfermedad_actual);
-    campo(doc, 'Cuadro clínico', historia.cuadro_clinico);
-    campo(doc, 'Síntomas generales', historia.sintomas_generales);
-    campo(doc, 'Hábitus exterior', historia.habitus_exterior);
 
     seccion(doc, 'Signos vitales');
     campo(doc, 'Presión arterial', historia.presion_arterial);
