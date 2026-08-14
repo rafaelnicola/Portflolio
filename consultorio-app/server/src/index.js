@@ -10,6 +10,7 @@ const turnosRouter = require('./routes/turnos');
 const historiasRouter = require('./routes/historias');
 const configRouter = require('./routes/config');
 const mensajesRouter = require('./routes/mensajes');
+const chatRouter = require('./routes/chat');
 
 const app = express();
 app.use(cors());
@@ -23,6 +24,7 @@ app.use('/api/turnos', turnosRouter);
 app.use('/api/historias', historiasRouter);
 app.use('/api/config', configRouter);
 app.use('/api/mensajes', mensajesRouter);
+app.use('/api/chat', chatRouter);
 
 app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 app.use((err, req, res, next) => {

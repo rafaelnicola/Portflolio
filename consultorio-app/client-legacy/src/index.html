@@ -53,6 +53,7 @@
         <button data-vista="turnos" class="nav-btn">Agenda</button>
         <button data-vista="usuarios" class="nav-btn oculto" id="nav-usuarios">Usuarios</button>
         <button data-vista="configuracion" class="nav-btn oculto" id="nav-configuracion">Configuracion</button>
+        <button data-vista="chat" class="nav-btn" id="nav-chat">Chat</button>
         <button data-vista="ayuda" class="nav-btn" id="nav-ayuda">Ayuda</button>
       </nav>
       <div class="usuario-info">
@@ -163,6 +164,19 @@
           pendrive u otro dispositivo externo.
         </p>
         <button id="btn-backup-ahora" class="secundario">Hacer copia de seguridad ahora</button>
+      </section>
+
+      <!-- Chat interno -->
+      <section id="vista-chat" class="vista oculto">
+        <h2>Chat del consultorio</h2>
+        <p style="color:#667; max-width:520px;">
+          Mensajes entre todos los usuarios del sistema, para temas del consultorio.
+        </p>
+        <div id="chat-mensajes" class="chat-mensajes"></div>
+        <form id="form-chat" class="chat-form">
+          <input id="chat-input" type="text" placeholder="Escribi un mensaje..." autocomplete="off" required />
+          <button type="submit">Enviar</button>
+        </form>
       </section>
 
       <!-- Ayuda -->

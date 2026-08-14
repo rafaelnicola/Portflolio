@@ -253,6 +253,9 @@ mano:
    que quede siempre conectado, un disco externo o una carpeta de red — así el backup no se pierde si falla
    el disco de la PC servidor.
 
+Para probarlo sin esperar al lunes: `schtasks /Run /TN "BiomedicalCenter_BackupSemanal"`. Para desinstalarlo:
+ejecutar `server/scripts/desinstalar-backup-automatico.bat`.
+
 ### Backup manual (Configuración → Seguridad, solo admin)
 
 Además del backup automático, cualquier admin puede generar una copia de seguridad al instante desde la
@@ -266,8 +269,12 @@ Cualquier usuario puede escribir un mensaje al administrador desde la sección "
 reportar un problema o hacer una consulta). El admin ve los mensajes recibidos ahí mismo, con un aviso en el
 menú lateral cuando hay mensajes sin leer.
 
-Para probarlo sin esperar al domingo: `schtasks /Run /TN "BiomedicalCenter_BackupSemanal"`. Para
-desinstalarlo: ejecutar `server/scripts/desinstalar-backup-automatico.bat`.
+### Chat interno (Chat, todos los usuarios)
+
+Chat compartido entre todos los usuarios del sistema, para comunicarse sobre temas del consultorio (no es
+privado entre dos personas, todos ven todos los mensajes, como un grupo). Se actualiza solo cada 5 segundos
+mientras la pantalla de Chat está abierta, y avisa con un número en el menú lateral cuando hay mensajes
+nuevos sin leer.
 
 ### Inicio automático del servidor con Windows
 

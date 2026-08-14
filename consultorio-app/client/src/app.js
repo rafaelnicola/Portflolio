@@ -178,6 +178,7 @@ $('#login-cambiar-servidor').addEventListener('click', async () => {
 });
 
 $('#btn-logout').addEventListener('click', () => {
+  detenerPollingChat();
   Api.setToken('');
   usuarioActual = null;
   mostrarLogin();
@@ -193,6 +194,7 @@ function iniciarApp() {
   $('#nav-configuracion').classList.toggle('oculto', usuarioActual.rol !== 'admin');
   cambiarVista('dashboard');
   actualizarBadgeAyuda();
+  actualizarBadgeChat();
 }
 
 async function actualizarBadgeAyuda() {
@@ -233,6 +235,8 @@ function cambiarVista(vista) {
     cargarConfiguracionSmtp();
   }
   if (vista === 'ayuda') cargarAyuda();
+  if (vista === 'chat') abrirChat();
+  else detenerPollingChat();
 }
 
 /* ---------- Dashboard ---------- */
@@ -1174,6 +1178,111 @@ $('#btn-backup-ahora').addEventListener('click', async () => {
   const fecha = new Date().toISOString().slice(0, 10);
   await descargarDocumento('/api/config/backup-ahora', `backup-consultorio-${fecha}.zip`);
 });
+
+/* ---------- Chat interno ---------- */
+
+let chatUltimoId = 0;
+let chatIntervalId = null;
+
+function chatUltimoVistoGuardado() {
+  return Number(localStorage.getItem('chatUltimoVisto') || 0);
+}
+
+function chatGuardarUltimoVisto(id) {
+  localStorage.setItem('chatUltimoVisto', String(id));
+}
+
+function renderBurbujaChat(m) {
+  const propia = m.usuario_id === usuarioActual.id;
+  const div = document.createElement('div');
+  div.className = `chat-burbuja ${propia ? 'propia' : ''}`;
+  div.innerHTML = `
+    ${!propia ? `<div class="autor">${escapeHtml(m.usuario_nombre) || '-'}</div>` : ''}
+    <div>${escapeHtml(m.mensaje)}</div>
+    <div class="hora">${escapeHtml(formatearFecha(m.created_at))}</div>
+  `;
+  return div;
+}
+
+async function abrirChat() {
+  const cont = $('#chat-mensajes');
+  try {
+    const mensajes = await Api.get('/api/chat');
+    cont.innerHTML = '';
+    mensajes.forEach((m) => {
+      cont.appendChild(renderBurbujaChat(m));
+      if (m.id > chatUltimoId) chatUltimoId = m.id;
+    });
+    cont.scrollTop = cont.scrollHeight;
+    chatGuardarUltimoVisto(chatUltimoId);
+    actualizarBadgeChat();
+    detenerPollingChat();
+    chatIntervalId = setInterval(pollingChat, 5000);
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+function detenerPollingChat() {
+  if (chatIntervalId) {
+    clearInterval(chatIntervalId);
+    chatIntervalId = null;
+  }
+}
+
+async function pollingChat() {
+  try {
+    const nuevos = await Api.get(`/api/chat?desde=${chatUltimoId}`);
+    if (!nuevos.length) return;
+    const cont = $('#chat-mensajes');
+    const estabaAbajo = cont.scrollTop + cont.clientHeight >= cont.scrollHeight - 20;
+    nuevos.forEach((m) => {
+      cont.appendChild(renderBurbujaChat(m));
+      if (m.id > chatUltimoId) chatUltimoId = m.id;
+    });
+    if (estabaAbajo) cont.scrollTop = cont.scrollHeight;
+    chatGuardarUltimoVisto(chatUltimoId);
+    actualizarBadgeChat();
+  } catch (e) {
+    // si falla un ciclo de polling, se reintenta en el siguiente
+  }
+}
+
+$('#form-chat').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = $('#chat-input');
+  const mensaje = input.value.trim();
+  if (!mensaje) return;
+  try {
+    const creado = await Api.post('/api/chat', { mensaje });
+    input.value = '';
+    const cont = $('#chat-mensajes');
+    cont.appendChild(renderBurbujaChat(creado));
+    cont.scrollTop = cont.scrollHeight;
+    if (creado.id > chatUltimoId) chatUltimoId = creado.id;
+    chatGuardarUltimoVisto(chatUltimoId);
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+async function actualizarBadgeChat() {
+  const navChat = $('#nav-chat');
+  const existente = navChat.querySelector('.badge-alerta');
+  if (existente) existente.remove();
+  try {
+    const nuevos = await Api.get(`/api/chat?desde=${chatUltimoVistoGuardado()}`);
+    const sinLeer = nuevos.filter((m) => m.usuario_id !== usuarioActual.id).length;
+    if (sinLeer > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'badge-alerta';
+      badge.textContent = sinLeer;
+      navChat.appendChild(badge);
+    }
+  } catch (e) {
+    // si falla, simplemente no se muestra el aviso
+  }
+}
 
 /* ---------- Ayuda ---------- */
 
