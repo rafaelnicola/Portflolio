@@ -192,6 +192,25 @@ function iniciarApp() {
   $('#nav-usuarios').classList.toggle('oculto', usuarioActual.rol !== 'admin');
   $('#nav-configuracion').classList.toggle('oculto', usuarioActual.rol !== 'admin');
   cambiarVista('dashboard');
+  actualizarBadgeAyuda();
+}
+
+async function actualizarBadgeAyuda() {
+  if (usuarioActual.rol !== 'admin') return;
+  try {
+    const { noLeidos } = await Api.get('/api/mensajes/no-leidos');
+    const navAyuda = $('#nav-ayuda');
+    const existente = navAyuda.querySelector('.badge-alerta');
+    if (existente) existente.remove();
+    if (noLeidos > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'badge-alerta';
+      badge.textContent = noLeidos;
+      navAyuda.appendChild(badge);
+    }
+  } catch (e) {
+    // si falla, simplemente no se muestra el aviso
+  }
 }
 
 function etiquetaRol(rol) {
@@ -213,6 +232,7 @@ function cambiarVista(vista) {
     cargarConfiguracionConsultorio();
     cargarConfiguracionSmtp();
   }
+  if (vista === 'ayuda') cargarAyuda();
 }
 
 /* ---------- Dashboard ---------- */
@@ -1143,6 +1163,67 @@ $('#form-smtp').addEventListener('submit', async (e) => {
     await Api.put('/api/config/smtp', datos);
     toast('Configuracion guardada', 'exito');
     cargarConfiguracionSmtp();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+/* ---------- Seguridad (backup manual, solo admin) ---------- */
+
+$('#btn-backup-ahora').addEventListener('click', async () => {
+  const fecha = new Date().toISOString().slice(0, 10);
+  await descargarDocumento('/api/config/backup-ahora', `backup-consultorio-${fecha}.zip`);
+});
+
+/* ---------- Ayuda ---------- */
+
+async function cargarAyuda() {
+  const bandeja = $('#ayuda-bandeja');
+  if (usuarioActual.rol !== 'admin') {
+    bandeja.classList.add('oculto');
+    return;
+  }
+  bandeja.classList.remove('oculto');
+  try {
+    const mensajes = await Api.get('/api/mensajes');
+    $('#ayuda-mensajes').innerHTML = mensajes.length
+      ? mensajes
+          .map(
+            (m) => `
+        <div class="tarjeta-registro">
+          <div class="fecha">${escapeHtml(formatearFecha(m.created_at))} ${m.leido ? '' : '<span style="color:#a12b2b; font-weight:600;">· Sin leer</span>'}</div>
+          <div><strong>De:</strong> ${escapeHtml(m.usuario_nombre) || '-'}</div>
+          ${m.asunto ? `<div><strong>Asunto:</strong> ${escapeHtml(m.asunto)}</div>` : ''}
+          <div>${escapeHtml(m.mensaje)}</div>
+          ${!m.leido ? `<button class="secundario" style="margin-top:8px" data-marcar-leido="${m.id}">Marcar como leido</button>` : ''}
+        </div>`
+          )
+          .join('')
+      : '<div class="vacio">Sin mensajes.</div>';
+    $$('#ayuda-mensajes [data-marcar-leido]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        try {
+          await Api.put(`/api/mensajes/${btn.dataset.marcarLeido}/leido`, {});
+          cargarAyuda();
+          actualizarBadgeAyuda();
+        } catch (e) {
+          toast(e.message, 'error');
+        }
+      });
+    });
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+$('#form-ayuda').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const datos = Object.fromEntries(new FormData(e.target).entries());
+  try {
+    await Api.post('/api/mensajes', datos);
+    toast('Mensaje enviado', 'exito');
+    e.target.reset();
+    if (usuarioActual.rol === 'admin') cargarAyuda();
   } catch (err) {
     toast(err.message, 'error');
   }

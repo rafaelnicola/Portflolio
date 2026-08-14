@@ -53,6 +53,7 @@
         <button data-vista="turnos" class="nav-btn">Agenda</button>
         <button data-vista="usuarios" class="nav-btn oculto" id="nav-usuarios">Usuarios</button>
         <button data-vista="configuracion" class="nav-btn oculto" id="nav-configuracion">Configuracion</button>
+        <button data-vista="ayuda" class="nav-btn" id="nav-ayuda">Ayuda</button>
       </nav>
       <div class="usuario-info">
         <div class="nombre" id="info-nombre"></div>
@@ -153,6 +154,33 @@
             <button type="submit" style="width:100%">Guardar configuracion</button>
           </form>
           <p id="smtp-estado" style="color:#667; margin-top:12px;"></p>
+        </div>
+
+        <h2>Seguridad</h2>
+        <p style="color:#667; max-width:520px;">
+          Ademas del backup automatico semanal, podes generar una copia de seguridad al instante
+          (pacientes, turnos, historias clinicas y fotos) y guardarla donde quieras, por ejemplo en un
+          pendrive u otro dispositivo externo.
+        </p>
+        <button id="btn-backup-ahora" class="secundario">Hacer copia de seguridad ahora</button>
+      </section>
+
+      <!-- Ayuda -->
+      <section id="vista-ayuda" class="vista oculto">
+        <h2>Ayuda</h2>
+        <p style="color:#667; max-width:520px;">
+          ¿Algun problema o duda con el sistema? Envia un mensaje y le va a llegar al administrador.
+        </p>
+        <div style="max-width:420px; margin-bottom:32px;">
+          <form id="form-ayuda">
+            <div class="campo"><label>Asunto</label><input name="asunto" placeholder="Ej: Error al exportar" /></div>
+            <div class="campo"><label>Mensaje</label><textarea name="mensaje" required></textarea></div>
+            <button type="submit" style="width:100%">Enviar mensaje</button>
+          </form>
+        </div>
+        <div id="ayuda-bandeja" class="oculto">
+          <h2>Mensajes recibidos</h2>
+          <div id="ayuda-mensajes"></div>
         </div>
       </section>
     </div>

@@ -246,12 +246,25 @@ mano:
 
 1. En la PC servidor, clic derecho sobre `server/scripts/instalar-backup-automatico.bat` → **Ejecutar como
    administrador**.
-2. Eso deja programada una tarea de Windows que corre todos los domingos a las 22:00: comprime la carpeta
+2. Eso deja programada una tarea de Windows que corre todos los lunes a las 8:00: comprime la carpeta
    `data/` en un `.zip` con la fecha, y borra automáticamente los backups de más de 90 días.
 3. Por defecto el `.zip` se guarda en `Documentos\BackupsConsultorio` de esa misma PC. Se recomienda editar
    `server/scripts/backup.ps1` con el Bloc de notas y cambiar esa ruta (variable `$destino`) por un pendrive
    que quede siempre conectado, un disco externo o una carpeta de red — así el backup no se pierde si falla
    el disco de la PC servidor.
+
+### Backup manual (Configuración → Seguridad, solo admin)
+
+Además del backup automático, cualquier admin puede generar una copia de seguridad al instante desde la
+app: Configuración → "Seguridad" → **Hacer copia de seguridad ahora**. Descarga un `.zip` con la base de
+datos y las fotos, que se puede guardar donde se quiera (un pendrive, un disco externo, etc.) sin esperar al
+backup automático — útil antes de un mantenimiento o para sacar una copia extra puntual.
+
+### Mensajes de ayuda (Ayuda, todos los usuarios)
+
+Cualquier usuario puede escribir un mensaje al administrador desde la sección "Ayuda" (por ejemplo, para
+reportar un problema o hacer una consulta). El admin ve los mensajes recibidos ahí mismo, con un aviso en el
+menú lateral cuando hay mensajes sin leer.
 
 Para probarlo sin esperar al domingo: `schtasks /Run /TN "BiomedicalCenter_BackupSemanal"`. Para
 desinstalarlo: ejecutar `server/scripts/desinstalar-backup-automatico.bat`.

@@ -35,10 +35,18 @@ ipcMain.handle('config:set-server-url', (event, url) => {
   return true;
 });
 
+const FILTROS_POR_EXTENSION = {
+  docx: { name: 'Documento Word', extensions: ['docx'] },
+  pdf: { name: 'Documento PDF', extensions: ['pdf'] },
+  zip: { name: 'Archivo comprimido', extensions: ['zip'] },
+};
+
 ipcMain.handle('archivo:guardar', async (event, { nombreSugerido, datos }) => {
+  const extension = (nombreSugerido || '').split('.').pop().toLowerCase();
+  const filtro = FILTROS_POR_EXTENSION[extension] || { name: 'Todos los archivos', extensions: ['*'] };
   const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
     defaultPath: nombreSugerido,
-    filters: [{ name: 'Documento Word', extensions: ['docx'] }],
+    filters: [filtro],
   });
   if (canceled || !filePath) return { ok: false };
   fs.writeFileSync(filePath, Buffer.from(datos));

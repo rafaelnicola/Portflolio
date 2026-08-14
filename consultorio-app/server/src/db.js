@@ -78,6 +78,15 @@ CREATE TABLE IF NOT EXISTS permisos_usuario (
   PRIMARY KEY (usuario_id, permiso)
 );
 
+CREATE TABLE IF NOT EXISTS mensajes_soporte (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+  asunto TEXT,
+  mensaje TEXT NOT NULL,
+  leido INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_turnos_fecha ON turnos(fecha);
 CREATE INDEX IF NOT EXISTS idx_turnos_paciente ON turnos(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_historias_paciente ON historias_clinicas(paciente_id);
@@ -137,6 +146,7 @@ function setSetting(clave, valor) {
 db.getSetting = getSetting;
 db.setSetting = setSetting;
 db.fotosDir = fotosDir;
+db.dataDir = dataDir;
 
 // Valores por defecto del consultorio (se pueden editar despues desde Configuracion)
 if (getSetting('consultorio_direccion') === null) {
