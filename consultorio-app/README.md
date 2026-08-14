@@ -271,10 +271,10 @@ menú lateral cuando hay mensajes sin leer.
 
 ### Chat interno (Chat, todos los usuarios)
 
-Chat compartido entre todos los usuarios del sistema, para comunicarse sobre temas del consultorio (no es
-privado entre dos personas, todos ven todos los mensajes, como un grupo). Se actualiza solo cada 5 segundos
-mientras la pantalla de Chat está abierta, y avisa con un número en el menú lateral cuando hay mensajes
-nuevos sin leer.
+Mensajería privada entre usuarios del sistema: se elige un usuario de la lista y se chatea 1 a 1 con esa
+persona (cada conversación es privada, solo la ven los dos usuarios involucrados). Se actualiza solo cada 5
+segundos mientras la pantalla de Chat está abierta, y avisa con un número en el menú lateral — y al lado de
+cada contacto — cuando hay mensajes nuevos sin leer.
 
 ### Inicio automático del servidor con Windows
 

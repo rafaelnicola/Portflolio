@@ -168,15 +168,18 @@
 
       <!-- Chat interno -->
       <section id="vista-chat" class="vista oculto">
-        <h2>Chat del consultorio</h2>
-        <p style="color:#667; max-width:520px;">
-          Mensajes entre todos los usuarios del sistema, para temas del consultorio.
-        </p>
-        <div id="chat-mensajes" class="chat-mensajes"></div>
-        <form id="form-chat" class="chat-form">
-          <input id="chat-input" type="text" placeholder="Escribi un mensaje..." autocomplete="off" required />
-          <button type="submit">Enviar</button>
-        </form>
+        <h2>Chat</h2>
+        <div class="chat-layout">
+          <div id="chat-contactos" class="chat-contactos"></div>
+          <div class="chat-conversacion">
+            <div id="chat-titulo-conversacion" class="chat-titulo-conversacion">Elegi un usuario para chatear</div>
+            <div id="chat-mensajes" class="chat-mensajes"></div>
+            <form id="form-chat" class="chat-form oculto">
+              <input id="chat-input" type="text" placeholder="Escribi un mensaje..." autocomplete="off" required />
+              <button type="submit">Enviar</button>
+            </form>
+          </div>
+        </div>
       </section>
 
       <!-- Ayuda -->

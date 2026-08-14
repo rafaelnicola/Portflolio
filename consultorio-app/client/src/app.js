@@ -1179,42 +1179,81 @@ $('#btn-backup-ahora').addEventListener('click', async () => {
   await descargarDocumento('/api/config/backup-ahora', `backup-consultorio-${fecha}.zip`);
 });
 
-/* ---------- Chat interno ---------- */
+/* ---------- Chat interno (conversaciones privadas) ---------- */
 
 let chatUltimoId = 0;
 let chatIntervalId = null;
-
-function chatUltimoVistoGuardado() {
-  return Number(localStorage.getItem('chatUltimoVisto') || 0);
-}
-
-function chatGuardarUltimoVisto(id) {
-  localStorage.setItem('chatUltimoVisto', String(id));
-}
+let chatContactoActivoId = null;
+let chatContactos = [];
 
 function renderBurbujaChat(m) {
-  const propia = m.usuario_id === usuarioActual.id;
+  const propia = m.remitente_id === usuarioActual.id;
   const div = document.createElement('div');
   div.className = `chat-burbuja ${propia ? 'propia' : ''}`;
   div.innerHTML = `
-    ${!propia ? `<div class="autor">${escapeHtml(m.usuario_nombre) || '-'}</div>` : ''}
     <div>${escapeHtml(m.mensaje)}</div>
     <div class="hora">${escapeHtml(formatearFecha(m.created_at))}</div>
   `;
   return div;
 }
 
+function renderContactosChat() {
+  const cont = $('#chat-contactos');
+  cont.innerHTML = chatContactos.length
+    ? chatContactos
+        .map(
+          (u) => `
+      <div class="chat-contacto ${u.id === chatContactoActivoId ? 'activo' : ''}" data-contacto="${u.id}">
+        <div>
+          <div class="nombre">${escapeHtml(u.nombre_completo)}</div>
+          <div class="rol">${escapeHtml(etiquetaRol(u.rol))}</div>
+        </div>
+        ${u.no_leidos > 0 ? `<span class="badge-alerta">${u.no_leidos}</span>` : ''}
+      </div>`
+        )
+        .join('')
+    : '<div class="vacio">No hay otros usuarios todavia.</div>';
+  $$('#chat-contactos [data-contacto]').forEach((el) => {
+    el.addEventListener('click', () => abrirConversacion(Number(el.dataset.contacto)));
+  });
+}
+
+async function cargarContactosChat() {
+  try {
+    chatContactos = await Api.get('/api/chat/usuarios');
+    renderContactosChat();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
 async function abrirChat() {
+  chatContactoActivoId = null;
+  $('#chat-titulo-conversacion').textContent = 'Elegi un usuario para chatear';
+  $('#chat-mensajes').innerHTML = '';
+  $('#form-chat').classList.add('oculto');
+  detenerPollingChat();
+  await cargarContactosChat();
+  actualizarBadgeChat();
+}
+
+async function abrirConversacion(otroId) {
+  chatContactoActivoId = otroId;
+  chatUltimoId = 0;
+  renderContactosChat();
+  const contacto = chatContactos.find((u) => u.id === otroId);
+  $('#chat-titulo-conversacion').textContent = contacto ? contacto.nombre_completo : '';
+  $('#form-chat').classList.remove('oculto');
   const cont = $('#chat-mensajes');
   try {
-    const mensajes = await Api.get('/api/chat');
+    const mensajes = await Api.get(`/api/chat/${otroId}`);
     cont.innerHTML = '';
     mensajes.forEach((m) => {
       cont.appendChild(renderBurbujaChat(m));
       if (m.id > chatUltimoId) chatUltimoId = m.id;
     });
     cont.scrollTop = cont.scrollHeight;
-    chatGuardarUltimoVisto(chatUltimoId);
+    cargarContactosChat();
     actualizarBadgeChat();
     detenerPollingChat();
     chatIntervalId = setInterval(pollingChat, 5000);
@@ -1231,8 +1270,11 @@ function detenerPollingChat() {
 }
 
 async function pollingChat() {
+  if (!chatContactoActivoId) return;
   try {
-    const nuevos = await Api.get(`/api/chat?desde=${chatUltimoId}`);
+    const nuevos = await Api.get(`/api/chat/${chatContactoActivoId}?desde=${chatUltimoId}`);
+    cargarContactosChat();
+    actualizarBadgeChat();
     if (!nuevos.length) return;
     const cont = $('#chat-mensajes');
     const estabaAbajo = cont.scrollTop + cont.clientHeight >= cont.scrollHeight - 20;
@@ -1241,8 +1283,6 @@ async function pollingChat() {
       if (m.id > chatUltimoId) chatUltimoId = m.id;
     });
     if (estabaAbajo) cont.scrollTop = cont.scrollHeight;
-    chatGuardarUltimoVisto(chatUltimoId);
-    actualizarBadgeChat();
   } catch (e) {
     // si falla un ciclo de polling, se reintenta en el siguiente
   }
@@ -1250,17 +1290,17 @@ async function pollingChat() {
 
 $('#form-chat').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!chatContactoActivoId) return;
   const input = $('#chat-input');
   const mensaje = input.value.trim();
   if (!mensaje) return;
   try {
-    const creado = await Api.post('/api/chat', { mensaje });
+    const creado = await Api.post(`/api/chat/${chatContactoActivoId}`, { mensaje });
     input.value = '';
     const cont = $('#chat-mensajes');
     cont.appendChild(renderBurbujaChat(creado));
     cont.scrollTop = cont.scrollHeight;
     if (creado.id > chatUltimoId) chatUltimoId = creado.id;
-    chatGuardarUltimoVisto(chatUltimoId);
   } catch (err) {
     toast(err.message, 'error');
   }
@@ -1271,12 +1311,11 @@ async function actualizarBadgeChat() {
   const existente = navChat.querySelector('.badge-alerta');
   if (existente) existente.remove();
   try {
-    const nuevos = await Api.get(`/api/chat?desde=${chatUltimoVistoGuardado()}`);
-    const sinLeer = nuevos.filter((m) => m.usuario_id !== usuarioActual.id).length;
-    if (sinLeer > 0) {
+    const { noLeidos } = await Api.get('/api/chat/no-leidos');
+    if (noLeidos > 0) {
       const badge = document.createElement('span');
       badge.className = 'badge-alerta';
-      badge.textContent = sinLeer;
+      badge.textContent = noLeidos;
       navChat.appendChild(badge);
     }
   } catch (e) {

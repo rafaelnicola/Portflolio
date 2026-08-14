@@ -89,12 +89,15 @@ CREATE TABLE IF NOT EXISTS mensajes_soporte (
 
 CREATE TABLE IF NOT EXISTS chat_mensajes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+  remitente_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+  destinatario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
   mensaje TEXT NOT NULL,
+  leido INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_turnos_fecha ON turnos(fecha);
+CREATE INDEX IF NOT EXISTS idx_chat_conversacion ON chat_mensajes(remitente_id, destinatario_id);
 CREATE INDEX IF NOT EXISTS idx_turnos_paciente ON turnos(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_historias_paciente ON historias_clinicas(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_pacientes_apellido ON pacientes(apellido);
