@@ -139,31 +139,40 @@ Electron (antivirus, proxy corporativo, etc.), no solo el permiso de npm.
 
 ## 3. Uso diario
 
-- **Recepción**: gestiona pacientes, agenda turnos y puede imprimir el tratamiento (fórmula médica) que
-  cargó el doctor/a, sin ver el resto de la historia clínica.
-- **Doctor/a**: además de lo anterior, puede crear pacientes, agendar/cancelar turnos, y cargar/editar la
-  historia clínica completa (presión arterial, peso, diagnóstico, tratamiento). Cada valoración se puede
+- **Recepción / Enfermero/a**: gestionan pacientes, agendan turnos, y ven la historia clínica completa de
+  cada paciente (con el botón "Ver" de cada valoración), pero no pueden crear ni editar valoraciones.
+- **Doctor/a**: además de lo anterior, carga/edita la historia clínica completa (motivo, antecedentes,
+  signos vitales, diagnóstico, tratamiento, etc.) y puede eliminar valoraciones. Cada valoración se puede
   editar hasta **48 horas** después de creada; pasado ese plazo queda bloqueada y hay que cargar una nueva.
 - **Admin**: todo lo anterior, y además crea usuarios y les asigna o cambia el rol (Usuarios → seleccionar
   rol en la lista desplegable), y configura el envío de emails (Configuración).
+
+En la lista de historias clínicas de cada paciente solo se ven de entrada los datos más importantes (motivo,
+presión arterial, peso, diagnóstico, tratamiento) — el botón **Ver** (disponible para todos los usuarios)
+abre el detalle completo con todo lo que cargó el doctor/a (antecedentes, signos vitales completos,
+exploración física, exámenes de laboratorio, observaciones, etc.).
+
+El campo **IMC** de los signos vitales se calcula solo, a partir del peso y la talla (estatura) cargados —
+no se escribe a mano.
 
 Al agendar un turno, el campo "Paciente" es un buscador (escribí nombre, apellido o DNI) en vez de una
 lista desplegable — pensado para consultorios con muchos pacientes registrados.
 
 ## Roles y permisos
 
-| Acción                                    | Recepción | Doctor/a | Admin |
-|--------------------------------------------|:---------:|:--------:|:-----:|
-| Ver / crear / editar pacientes              | ✅        | ✅       | ✅    |
-| Subir / tomar foto del paciente             | ✅        | ✅       | ✅    |
-| Ver historia clínica completa               | ✅        | ✅       | ✅    |
-| Exportar / enviar por email la historia      | ✅        | ✅       | ✅    |
-| Agendar / modificar turnos                   | ✅        | ✅       | ✅    |
-| Crear y editar valoraciones (historia clínica)| ❌ (*)   | ✅       | ✅    |
-| Eliminar pacientes                            | ❌ (*)   | ❌ (*)   | ✅    |
-| Eliminar turnos                               | ✅        | ✅       | ✅    |
-| Cambiar el rol de otros usuarios              | ❌        | ❌       | ✅    |
-| Configurar email / datos del consultorio      | ❌        | ❌       | ✅    |
+| Acción                                    | Recepción | Enfermero/a | Doctor/a | Admin |
+|--------------------------------------------|:---------:|:-----------:|:--------:|:-----:|
+| Ver / crear / editar pacientes              | ✅        | ✅          | ✅       | ✅    |
+| Subir / tomar foto del paciente             | ✅        | ✅          | ✅       | ✅    |
+| Ver historia clínica completa               | ✅        | ✅          | ✅       | ✅    |
+| Exportar / enviar por email la historia      | ✅        | ✅          | ✅       | ✅    |
+| Agendar / modificar turnos                   | ✅        | ✅          | ✅       | ✅    |
+| Crear y editar valoraciones (historia clínica)| ❌ (*)   | ❌ (*)      | ✅       | ✅    |
+| Eliminar valoraciones (historia clínica)      | ❌ (*)   | ❌ (*)      | ✅       | ✅    |
+| Eliminar pacientes                            | ❌ (*)   | ❌ (*)      | ❌ (*)   | ✅    |
+| Eliminar turnos                               | ✅        | ✅          | ✅       | ✅    |
+| Cambiar el rol de otros usuarios              | ❌        | ❌          | ❌       | ✅    |
+| Configurar email / datos del consultorio      | ❌        | ❌          | ❌       | ✅    |
 
 (*) Estos permisos los puede activar o desactivar el admin **individualmente por usuario**, sin tocar
 código: Usuarios → botón **Permisos** en la fila de cada usuario. Por ejemplo, se le puede dar a una

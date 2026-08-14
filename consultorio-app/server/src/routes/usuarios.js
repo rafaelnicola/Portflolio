@@ -107,7 +107,7 @@ router.post('/', requireAuth, requireRol('admin'), (req, res) => {
   if (!username || !password || !nombre_completo || !rol) {
     return res.status(400).json({ error: 'Faltan datos' });
   }
-  if (!['admin', 'doctor', 'recepcion'].includes(rol)) {
+  if (!['admin', 'doctor', 'recepcion', 'enfermera'].includes(rol)) {
     return res.status(400).json({ error: 'Rol invalido' });
   }
   if (password.length < 4) {
@@ -135,7 +135,7 @@ router.put('/:id/activo', requireAuth, requireRol('admin'), (req, res) => {
 
 router.put('/:id/rol', requireAuth, requireRol('admin'), (req, res) => {
   const { rol } = req.body || {};
-  if (!['admin', 'doctor', 'recepcion'].includes(rol)) {
+  if (!['admin', 'doctor', 'recepcion', 'enfermera'].includes(rol)) {
     return res.status(400).json({ error: 'Rol invalido' });
   }
   const usuario = db.prepare('SELECT * FROM usuarios WHERE id = ?').get(req.params.id);

@@ -50,7 +50,7 @@ router.get('/:id', (req, res) => {
   res.json(paciente);
 });
 
-router.post('/', requireRol('admin', 'recepcion', 'doctor'), (req, res) => {
+router.post('/', requireRol('admin', 'recepcion', 'doctor', 'enfermera'), (req, res) => {
   const {
     nombre,
     apellido,
@@ -98,7 +98,7 @@ router.post('/', requireRol('admin', 'recepcion', 'doctor'), (req, res) => {
   }
 });
 
-router.put('/:id', requireRol('admin', 'recepcion', 'doctor'), (req, res) => {
+router.put('/:id', requireRol('admin', 'recepcion', 'doctor', 'enfermera'), (req, res) => {
   const {
     nombre,
     apellido,

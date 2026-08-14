@@ -9,6 +9,10 @@ const PERMISOS = {
     etiqueta: 'Crear y editar historia clinica',
     rolesPorDefecto: ['admin', 'doctor'],
   },
+  historia_eliminar: {
+    etiqueta: 'Eliminar historias clinicas',
+    rolesPorDefecto: ['admin', 'doctor'],
+  },
   pacientes_eliminar: {
     etiqueta: 'Eliminar pacientes',
     rolesPorDefecto: ['admin'],

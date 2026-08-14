@@ -35,7 +35,7 @@ function conEditable(historia) {
   return { ...historia, editable: horasTranscurridas(historia.fecha) <= HORAS_LIMITE_EDICION };
 }
 
-router.get('/paciente/:pacienteId', requireRol('admin', 'doctor', 'recepcion'), (req, res) => {
+router.get('/paciente/:pacienteId', requireRol('admin', 'doctor', 'recepcion', 'enfermera'), (req, res) => {
   const historias = db
     .prepare(`${SELECT_HISTORIA} WHERE h.paciente_id = ? ORDER BY h.fecha DESC, h.id DESC`)
     .all(req.params.pacienteId);
@@ -90,12 +90,12 @@ router.put('/:id', requirePermiso('historia_gestionar'), (req, res) => {
   res.json({ ok: true });
 });
 
-router.delete('/:id', requireRol('admin'), (req, res) => {
+router.delete('/:id', requirePermiso('historia_eliminar'), (req, res) => {
   db.prepare('DELETE FROM historias_clinicas WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });
 
-router.get('/:id/exportar-word', requireRol('admin', 'doctor', 'recepcion'), async (req, res) => {
+router.get('/:id/exportar-word', requireRol('admin', 'doctor', 'recepcion', 'enfermera'), async (req, res) => {
   const datos = obtenerHistoriaConPaciente(req.params.id);
   if (!datos) return res.status(404).json({ error: 'Registro no encontrado' });
   try {
@@ -109,7 +109,7 @@ router.get('/:id/exportar-word', requireRol('admin', 'doctor', 'recepcion'), asy
   }
 });
 
-router.get('/:id/exportar-tratamiento-word', requireRol('admin', 'doctor', 'recepcion'), async (req, res) => {
+router.get('/:id/exportar-tratamiento-word', requireRol('admin', 'doctor', 'recepcion', 'enfermera'), async (req, res) => {
   const datos = obtenerHistoriaConPaciente(req.params.id);
   if (!datos) return res.status(404).json({ error: 'Registro no encontrado' });
   try {
@@ -127,7 +127,7 @@ router.get('/:id/exportar-tratamiento-word', requireRol('admin', 'doctor', 'rece
   }
 });
 
-router.get('/:id/exportar-examenes-word', requireRol('admin', 'doctor', 'recepcion'), async (req, res) => {
+router.get('/:id/exportar-examenes-word', requireRol('admin', 'doctor', 'recepcion', 'enfermera'), async (req, res) => {
   const datos = obtenerHistoriaConPaciente(req.params.id);
   if (!datos) return res.status(404).json({ error: 'Registro no encontrado' });
   try {
@@ -145,7 +145,7 @@ router.get('/:id/exportar-examenes-word', requireRol('admin', 'doctor', 'recepci
   }
 });
 
-router.post('/:id/enviar-email', requireRol('admin', 'doctor', 'recepcion'), async (req, res) => {
+router.post('/:id/enviar-email', requireRol('admin', 'doctor', 'recepcion', 'enfermera'), async (req, res) => {
   const { destinatario } = req.body || {};
   if (!destinatario) return res.status(400).json({ error: 'Falta el email de destino' });
   const datos = obtenerHistoriaConPaciente(req.params.id);

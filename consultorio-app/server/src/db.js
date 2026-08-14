@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   username TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
   nombre_completo TEXT NOT NULL,
-  rol TEXT NOT NULL CHECK (rol IN ('admin', 'doctor', 'recepcion')),
+  rol TEXT NOT NULL CHECK (rol IN ('admin', 'doctor', 'recepcion', 'enfermera')),
   activo INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -113,6 +113,39 @@ function agregarColumnaSiFalta(tabla, columna, definicion) {
     db.exec(`ALTER TABLE ${tabla} ADD COLUMN ${columna} ${definicion}`);
   }
 }
+
+// SQLite no permite modificar un CHECK existente con ALTER TABLE: hay que
+// recrear la tabla. Esto agrega el rol 'enfermera' a bases de datos creadas
+// con una version anterior del esquema (que solo permitia admin/doctor/recepcion).
+//
+// IMPORTANTE: no se puede hacer "ALTER TABLE usuarios RENAME TO usuarios_old",
+// porque SQLite actualiza automaticamente las foreign keys de otras tablas
+// (turnos.doctor_id, historias_clinicas.doctor_id, etc.) para que apunten a
+// "usuarios_old", y al borrar esa tabla se dispara el ON DELETE SET NULL de
+// esas columnas, dejando todo en null. Por eso la tabla nueva se crea con
+// otro nombre y se renombra recien al final, cuando la vieja ya no existe.
+function migrarRolEnfermeraSiFalta() {
+  const tabla = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'usuarios'").get();
+  if (!tabla || tabla.sql.includes('enfermera')) return;
+  db.exec('PRAGMA foreign_keys = OFF');
+  db.exec(`
+    CREATE TABLE usuarios_nuevo (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      nombre_completo TEXT NOT NULL,
+      rol TEXT NOT NULL CHECK (rol IN ('admin', 'doctor', 'recepcion', 'enfermera')),
+      activo INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    INSERT INTO usuarios_nuevo (id, username, password_hash, nombre_completo, rol, activo, created_at)
+      SELECT id, username, password_hash, nombre_completo, rol, activo, created_at FROM usuarios;
+    DROP TABLE usuarios;
+    ALTER TABLE usuarios_nuevo RENAME TO usuarios;
+  `);
+  db.exec('PRAGMA foreign_keys = ON');
+}
+migrarRolEnfermeraSiFalta();
 
 // Migraciones para bases de datos creadas con una version anterior del esquema
 agregarColumnaSiFalta('pacientes', 'sexo', 'TEXT');

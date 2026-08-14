@@ -52,7 +52,7 @@ router.get('/', (req, res) => {
   res.json(turnos);
 });
 
-router.post('/', requireRol('admin', 'recepcion', 'doctor'), (req, res) => {
+router.post('/', requireRol('admin', 'recepcion', 'doctor', 'enfermera'), (req, res) => {
   const { paciente_id, doctor_id, fecha, hora, motivo } = req.body || {};
   if (!paciente_id || !fecha || !hora) {
     return res.status(400).json({ error: 'Paciente, fecha y hora son requeridos' });
@@ -63,7 +63,7 @@ router.post('/', requireRol('admin', 'recepcion', 'doctor'), (req, res) => {
   res.status(201).json({ id: info.lastInsertRowid });
 });
 
-router.put('/:id', requireRol('admin', 'recepcion', 'doctor'), (req, res) => {
+router.put('/:id', requireRol('admin', 'recepcion', 'doctor', 'enfermera'), (req, res) => {
   const { paciente_id, doctor_id, fecha, hora, motivo } = req.body || {};
   const existente = db.prepare('SELECT id FROM turnos WHERE id = ?').get(req.params.id);
   if (!existente) return res.status(404).json({ error: 'Turno no encontrado' });

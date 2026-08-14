@@ -13,10 +13,23 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-// Devuelve un <div> con el campo solo si tiene contenido; si no, no muestra nada.
-function campoOpcional(etiqueta, valor) {
-  if (!valor) return '';
-  return `<div><strong>${escapeHtml(etiqueta)}:</strong> ${escapeHtml(valor)}</div>`;
+// Extrae el primer numero de un texto libre (ej: "70kg" -> 70, "1,70m" -> 1.70).
+function extraerNumero(texto) {
+  const match = String(texto || '').match(/-?\d+([.,]\d+)?/);
+  if (!match) return null;
+  const num = parseFloat(match[0].replace(',', '.'));
+  return Number.isNaN(num) ? null : num;
+}
+
+// Calcula el IMC a partir de peso (kg) y talla en texto libre. La talla se
+// interpreta en metros salvo que el numero sea mayor a 3, en cuyo caso se
+// asume que esta en centimetros (ej: "170" -> 1.70m, "1.70" -> 1.70m).
+function calcularImc(pesoTexto, tallaTexto) {
+  const peso = extraerNumero(pesoTexto);
+  let talla = extraerNumero(tallaTexto);
+  if (!peso || !talla || peso <= 0 || talla <= 0) return '';
+  if (talla > 3) talla = talla / 100;
+  return (peso / (talla * talla)).toFixed(1);
 }
 
 // La historia clinica guarda h.fecha en UTC (datetime('now') de SQLite);
@@ -216,7 +229,9 @@ async function actualizarBadgeAyuda() {
 }
 
 function etiquetaRol(rol) {
-  return { admin: 'Administrador/a', doctor: 'Doctor/a', recepcion: 'Recepcion' }[rol] || rol;
+  return (
+    { admin: 'Administrador/a', doctor: 'Doctor/a', recepcion: 'Recepcion', enfermera: 'Enfermero/a' }[rol] || rol
+  );
 }
 
 $$('.nav-btn').forEach((btn) => {
@@ -571,6 +586,7 @@ async function cargarHistoriaClinica(pacienteId) {
   if (!cont) return;
   try {
     const puedeGestionar = usuarioActual.permisos.historia_gestionar;
+    const puedeEliminar = usuarioActual.permisos.historia_eliminar;
     const historias = await Api.get(`/api/historias/paciente/${pacienteId}`);
     const historiasPorId = new Map(historias.map((h) => [String(h.id), h]));
     cont.innerHTML = `
@@ -584,28 +600,19 @@ async function cargarHistoriaClinica(pacienteId) {
               <div class="tarjeta-registro">
                 <div class="fecha">${escapeHtml(formatearFecha(h.fecha))} ${h.editable ? '' : '<span style="color:#a12b2b; font-weight:600;">· Bloqueada (mas de 48hs)</span>'}</div>
                 <div><strong>Motivo:</strong> ${escapeHtml(h.motivo_consulta) || '-'}</div>
-                ${campoOpcional('Enfermedad actual', h.enfermedad_actual)}
-                ${campoOpcional('Antecedentes heredo familiares', h.antecedentes_heredo_familiares)}
-                ${campoOpcional('Antecedentes personales no patologicos', h.antecedentes_personales_no_patologicos)}
-                ${campoOpcional('Antecedentes personales patologicos', h.antecedentes_personales_patologicos)}
                 <div><strong>Presion arterial:</strong> ${escapeHtml(h.presion_arterial) || '-'}</div>
                 <div><strong>Peso:</strong> ${escapeHtml(h.peso) || '-'}</div>
-                ${campoOpcional('Glucometria', h.glucometria)}
-                ${campoOpcional('IMC', h.imc)}
-                ${campoOpcional('Perimetro abdominal', h.perimetro_abdominal)}
-                ${campoOpcional('Talla', h.talla)}
-                ${campoOpcional('Exploracion fisica', h.exploracion_fisica)}
                 <div><strong>Diagnostico:</strong> ${escapeHtml(h.diagnostico) || '-'}</div>
                 <div><strong>Tratamiento:</strong> ${escapeHtml(h.tratamiento) || '-'}</div>
-                ${campoOpcional('Examenes de laboratorio', h.examenes_laboratorio)}
-                ${h.observaciones ? `<div><strong>Observaciones:</strong> ${escapeHtml(h.observaciones)}</div>` : ''}
                 <div class="doctor">Dr./Dra. ${escapeHtml(h.doctor_nombre) || '-'}</div>
                 <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
+                  <button class="secundario" data-ver-historia="${h.id}">Ver</button>
                   ${puedeGestionar && h.editable ? `<button class="secundario" data-editar-historia="${h.id}">Editar</button>` : ''}
                   <button class="secundario" data-exportar-historia="${h.id}">Exportar a Word</button>
                   <button class="secundario" data-exportar-tratamiento="${h.id}">Exportar tratamiento (para imprimir)</button>
                   <button class="secundario" data-exportar-examenes="${h.id}">Exportar examenes (para imprimir)</button>
                   <button class="secundario" data-email-historia="${h.id}">Enviar por email</button>
+                  ${puedeEliminar ? `<button class="peligro" data-eliminar-historia="${h.id}">Eliminar</button>` : ''}
                 </div>
               </div>`
                 )
@@ -617,10 +624,25 @@ async function cargarHistoriaClinica(pacienteId) {
     if (puedeGestionar) {
       $('#btn-nueva-historia').addEventListener('click', () => abrirFormHistoria(pacienteId));
     }
+    $$('#tab-clinica [data-ver-historia]').forEach((btn) => {
+      btn.addEventListener('click', () => abrirDetalleHistoria(historiasPorId.get(btn.dataset.verHistoria)));
+    });
     $$('#tab-clinica [data-editar-historia]').forEach((btn) => {
       btn.addEventListener('click', () =>
         abrirFormHistoria(pacienteId, historiasPorId.get(btn.dataset.editarHistoria))
       );
+    });
+    $$('#tab-clinica [data-eliminar-historia]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('¿Eliminar esta valoracion? No se puede deshacer.')) return;
+        try {
+          await Api.del(`/api/historias/${btn.dataset.eliminarHistoria}`);
+          toast('Valoracion eliminada', 'exito');
+          cargarHistoriaClinica(pacienteId);
+        } catch (e) {
+          toast(e.message, 'error');
+        }
+      });
     });
     $$('#tab-clinica [data-exportar-historia]').forEach((btn) => {
       btn.addEventListener('click', () =>
@@ -654,6 +676,37 @@ async function cargarHistoriaClinica(pacienteId) {
   }
 }
 
+function filaDetalle(etiqueta, valor) {
+  return `<div style="margin-bottom:10px"><strong>${escapeHtml(etiqueta)}:</strong> ${escapeHtml(valor) || '-'}</div>`;
+}
+
+function abrirDetalleHistoria(historia) {
+  abrirPanel(`
+    <button class="secundario cerrar" onclick="cerrarPanel()">Cerrar</button>
+    <h2>Historia clinica</h2>
+    <p style="color:#667">
+      ${escapeHtml(formatearFecha(historia.fecha))} — Dr./Dra. ${escapeHtml(historia.doctor_nombre) || '-'}
+    </p>
+    ${filaDetalle('Motivo de consulta', historia.motivo_consulta)}
+    ${filaDetalle('Enfermedad actual', historia.enfermedad_actual)}
+    ${filaDetalle('Antecedentes heredo familiares', historia.antecedentes_heredo_familiares)}
+    ${filaDetalle('Antecedentes personales no patologicos', historia.antecedentes_personales_no_patologicos)}
+    ${filaDetalle('Antecedentes personales patologicos', historia.antecedentes_personales_patologicos)}
+    <h3 style="margin-bottom:6px">Signos vitales</h3>
+    ${filaDetalle('Presion arterial', historia.presion_arterial)}
+    ${filaDetalle('Peso', historia.peso)}
+    ${filaDetalle('Glucometria', historia.glucometria)}
+    ${filaDetalle('IMC', historia.imc)}
+    ${filaDetalle('Perimetro abdominal', historia.perimetro_abdominal)}
+    ${filaDetalle('Talla', historia.talla)}
+    ${filaDetalle('Exploracion fisica', historia.exploracion_fisica)}
+    ${filaDetalle('Diagnostico', historia.diagnostico)}
+    ${filaDetalle('Tratamiento', historia.tratamiento)}
+    ${filaDetalle('Examenes de laboratorio', historia.examenes_laboratorio)}
+    ${filaDetalle('Observaciones', historia.observaciones)}
+  `);
+}
+
 function abrirFormHistoria(pacienteId, historiaExistente) {
   const esEdicion = !!historiaExistente;
   const ahora = new Date().toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
@@ -678,9 +731,9 @@ function abrirFormHistoria(pacienteId, historiaExistente) {
         <div class="campo"><label>Presion arterial</label><input name="presion_arterial" placeholder="Ej: 120/80" value="${escapeHtml(historiaExistente?.presion_arterial)}" /></div>
         <div class="campo"><label>Peso</label><input name="peso" placeholder="Ej: 70kg" value="${escapeHtml(historiaExistente?.peso)}" /></div>
         <div class="campo"><label>Glucometria</label><input name="glucometria" value="${escapeHtml(historiaExistente?.glucometria)}" /></div>
-        <div class="campo"><label>IMC</label><input name="imc" value="${escapeHtml(historiaExistente?.imc)}" /></div>
+        <div class="campo"><label>IMC (calculado)</label><input name="imc" readonly value="${escapeHtml(historiaExistente?.imc)}" /></div>
         <div class="campo"><label>Perimetro abdominal</label><input name="perimetro_abdominal" value="${escapeHtml(historiaExistente?.perimetro_abdominal)}" /></div>
-        <div class="campo"><label>Talla</label><input name="talla" value="${escapeHtml(historiaExistente?.talla)}" /></div>
+        <div class="campo"><label>Talla (estatura)</label><input name="talla" placeholder="Ej: 1.70m" value="${escapeHtml(historiaExistente?.talla)}" /></div>
       </div>
       <div class="campo"><label>Exploracion fisica</label><textarea name="exploracion_fisica">${escapeHtml(historiaExistente?.exploracion_fisica)}</textarea></div>
       <div class="campo"><label>Diagnostico</label><textarea name="diagnostico">${escapeHtml(historiaExistente?.diagnostico)}</textarea></div>
@@ -690,6 +743,13 @@ function abrirFormHistoria(pacienteId, historiaExistente) {
       <button type="submit" style="width:100%">${esEdicion ? 'Guardar cambios' : 'Guardar'}</button>
     </form>
   `);
+  const form = $('#form-historia');
+  const actualizarImc = () => {
+    form.imc.value = calcularImc(form.peso.value, form.talla.value);
+  };
+  form.peso.addEventListener('input', actualizarImc);
+  form.talla.addEventListener('input', actualizarImc);
+  actualizarImc();
   $('#form-historia').addEventListener('submit', async (e) => {
     e.preventDefault();
     const datos = Object.fromEntries(new FormData(e.target).entries());
@@ -973,7 +1033,7 @@ function renderTablaUsuarios(usuarios) {
         <td>${escapeHtml(u.username)}</td>
         <td>
           <select data-rol="${u.id}">
-            ${['recepcion', 'doctor', 'admin']
+            ${['recepcion', 'enfermera', 'doctor', 'admin']
               .map((r) => `<option value="${r}" ${r === u.rol ? 'selected' : ''}>${etiquetaRol(r)}</option>`)
               .join('')}
           </select>
@@ -1093,6 +1153,7 @@ function abrirFormUsuario() {
         <label>Rol</label>
         <select name="rol" required>
           <option value="recepcion">Recepcion</option>
+          <option value="enfermera">Enfermero/a</option>
           <option value="doctor">Doctor/a</option>
           <option value="admin">Administrador/a</option>
         </select>
