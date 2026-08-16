@@ -95,6 +95,50 @@ router.delete('/:id', requirePermiso('historia_eliminar'), (req, res) => {
   res.json({ ok: true });
 });
 
+// Anotaciones de enfermeria: notas independientes ligadas a una valoracion, para
+// registrar seguimientos posteriores (ej. terapias) sin depender del limite de
+// 48hs que aplica a la valoracion en si. Las puede ver cualquier usuario, pero
+// solo cargarlas/editarlas quien tenga el permiso correspondiente.
+const SELECT_ANOTACION = `
+  SELECT a.*, u.nombre_completo AS usuario_nombre
+  FROM anotaciones_enfermeria a
+  LEFT JOIN usuarios u ON u.id = a.usuario_id
+`;
+
+router.get('/:id/anotaciones', requireRol('admin', 'doctor', 'recepcion', 'enfermera'), (req, res) => {
+  const anotaciones = db
+    .prepare(`${SELECT_ANOTACION} WHERE a.historia_id = ? ORDER BY a.created_at ASC, a.id ASC`)
+    .all(req.params.id);
+  res.json(anotaciones);
+});
+
+router.post('/:id/anotaciones', requirePermiso('anotaciones_enfermeria_gestionar'), (req, res) => {
+  const { nota } = req.body || {};
+  if (!nota || !nota.trim()) return res.status(400).json({ error: 'Falta la anotacion' });
+  const historia = db.prepare('SELECT id FROM historias_clinicas WHERE id = ?').get(req.params.id);
+  if (!historia) return res.status(404).json({ error: 'Historia no encontrada' });
+  const info = db
+    .prepare('INSERT INTO anotaciones_enfermeria (historia_id, usuario_id, nota) VALUES (?, ?, ?)')
+    .run(req.params.id, req.usuario.id, nota.trim());
+  const creada = db.prepare(`${SELECT_ANOTACION} WHERE a.id = ?`).get(info.lastInsertRowid);
+  res.status(201).json(creada);
+});
+
+router.put('/:id/anotaciones/:notaId', requirePermiso('anotaciones_enfermeria_gestionar'), (req, res) => {
+  const { nota } = req.body || {};
+  if (!nota || !nota.trim()) return res.status(400).json({ error: 'Falta la anotacion' });
+  const existente = db
+    .prepare('SELECT id FROM anotaciones_enfermeria WHERE id = ? AND historia_id = ?')
+    .get(req.params.notaId, req.params.id);
+  if (!existente) return res.status(404).json({ error: 'Anotacion no encontrada' });
+  db.prepare("UPDATE anotaciones_enfermeria SET nota = ?, updated_at = datetime('now') WHERE id = ?").run(
+    nota.trim(),
+    req.params.notaId
+  );
+  const actualizada = db.prepare(`${SELECT_ANOTACION} WHERE a.id = ?`).get(req.params.notaId);
+  res.json(actualizada);
+});
+
 router.get('/:id/exportar-word', requireRol('admin', 'doctor', 'recepcion', 'enfermera'), async (req, res) => {
   const datos = obtenerHistoriaConPaciente(req.params.id);
   if (!datos) return res.status(404).json({ error: 'Registro no encontrado' });

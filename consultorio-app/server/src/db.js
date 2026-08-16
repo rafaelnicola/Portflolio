@@ -67,6 +67,15 @@ CREATE TABLE IF NOT EXISTS historias_clinicas (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS anotaciones_enfermeria (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  historia_id INTEGER NOT NULL REFERENCES historias_clinicas(id) ON DELETE CASCADE,
+  usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+  nota TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS configuracion (
   clave TEXT PRIMARY KEY,
   valor TEXT
@@ -101,6 +110,7 @@ CREATE INDEX IF NOT EXISTS idx_chat_conversacion ON chat_mensajes(remitente_id, 
 CREATE INDEX IF NOT EXISTS idx_turnos_paciente ON turnos(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_historias_paciente ON historias_clinicas(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_pacientes_apellido ON pacientes(apellido);
+CREATE INDEX IF NOT EXISTS idx_anotaciones_historia ON anotaciones_enfermeria(historia_id);
 `);
 
 function columnaExiste(tabla, columna) {
@@ -164,6 +174,7 @@ agregarColumnaSiFalta('historias_clinicas', 'perimetro_abdominal', 'TEXT');
 agregarColumnaSiFalta('historias_clinicas', 'talla', 'TEXT');
 agregarColumnaSiFalta('historias_clinicas', 'exploracion_fisica', 'TEXT');
 agregarColumnaSiFalta('historias_clinicas', 'examenes_laboratorio', 'TEXT');
+agregarColumnaSiFalta('turnos', 'creado_por_id', 'INTEGER REFERENCES usuarios(id) ON DELETE SET NULL');
 
 const userCount = db.prepare('SELECT COUNT(*) AS n FROM usuarios').get().n;
 if (userCount === 0) {

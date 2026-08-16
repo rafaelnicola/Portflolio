@@ -155,8 +155,16 @@ exploración física, exámenes de laboratorio, observaciones, etc.).
 El campo **IMC** de los signos vitales se calcula solo, a partir del peso y la talla (estatura) cargados —
 no se escribe a mano.
 
+Dentro del detalle de cada valoración ("Ver") hay una sección de **anotaciones de enfermería**, para
+registrar seguimientos posteriores a la consulta (por ejemplo, cuando el paciente asiste a una terapia unos
+días después). Solo quien tenga el permiso correspondiente (enfermero/a o admin por defecto) puede
+cargarlas o editarlas — el resto de los usuarios las puede ver, pero no modificar. A diferencia de la
+valoración en sí, estas anotaciones **no se bloquean a las 48hs**, se pueden editar en cualquier momento.
+
 Al agendar un turno, el campo "Paciente" es un buscador (escribí nombre, apellido o DNI) en vez de una
-lista desplegable — pensado para consultorios con muchos pacientes registrados.
+lista desplegable — pensado para consultorios con muchos pacientes registrados. La Agenda muestra además
+quién agendó cada turno y cuándo — ese dato no se puede modificar (ni siquiera el admin) y no aparece en la
+lista descargada en Word, solo en la pantalla.
 
 ## Roles y permisos
 
@@ -169,6 +177,7 @@ lista desplegable — pensado para consultorios con muchos pacientes registrados
 | Agendar / modificar turnos                   | ✅        | ✅          | ✅       | ✅    |
 | Crear y editar valoraciones (historia clínica)| ❌ (*)   | ❌ (*)      | ✅       | ✅    |
 | Eliminar valoraciones (historia clínica)      | ❌ (*)   | ❌ (*)      | ✅       | ✅    |
+| Cargar / editar anotaciones de enfermería     | ❌ (*)   | ✅          | ❌ (*)   | ✅    |
 | Eliminar pacientes                            | ❌ (*)   | ❌ (*)      | ❌ (*)   | ✅    |
 | Eliminar turnos                               | ✅        | ✅          | ✅       | ✅    |
 | Cambiar el rol de otros usuarios              | ❌        | ❌          | ❌       | ✅    |

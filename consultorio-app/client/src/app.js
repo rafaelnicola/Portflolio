@@ -680,7 +680,8 @@ function filaDetalle(etiqueta, valor) {
   return `<div style="margin-bottom:10px"><strong>${escapeHtml(etiqueta)}:</strong> ${escapeHtml(valor) || '-'}</div>`;
 }
 
-function abrirDetalleHistoria(historia) {
+async function abrirDetalleHistoria(historia) {
+  const puedeAnotar = usuarioActual.permisos.anotaciones_enfermeria_gestionar;
   abrirPanel(`
     <button class="secundario cerrar" onclick="cerrarPanel()">Cerrar</button>
     <h2>Historia clinica</h2>
@@ -704,7 +705,82 @@ function abrirDetalleHistoria(historia) {
     ${filaDetalle('Tratamiento', historia.tratamiento)}
     ${filaDetalle('Examenes de laboratorio', historia.examenes_laboratorio)}
     ${filaDetalle('Observaciones', historia.observaciones)}
+    <h3 style="margin-bottom:6px">Anotaciones de enfermeria</h3>
+    <p style="color:#667; font-size:13px; margin-top:-4px">
+      Para registrar controles o terapias posteriores a esta consulta. No se bloquean a las 48hs.
+    </p>
+    <div id="lista-anotaciones"></div>
+    ${
+      puedeAnotar
+        ? `<form id="form-anotacion" style="margin-top:10px">
+             <div class="campo"><textarea name="nota" placeholder="Nueva anotacion..." required></textarea></div>
+             <button type="submit" class="secundario">Agregar anotacion</button>
+           </form>`
+        : ''
+    }
   `);
+  cargarAnotacionesEnfermeria(historia.id, puedeAnotar);
+  if (puedeAnotar) {
+    $('#form-anotacion').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nota = $('#form-anotacion [name=nota]').value.trim();
+      if (!nota) return;
+      try {
+        await Api.post(`/api/historias/${historia.id}/anotaciones`, { nota });
+        $('#form-anotacion [name=nota]').value = '';
+        cargarAnotacionesEnfermeria(historia.id, puedeAnotar);
+      } catch (err) {
+        toast(err.message, 'error');
+      }
+    });
+  }
+}
+
+async function cargarAnotacionesEnfermeria(historiaId, puedeAnotar) {
+  const cont = $('#lista-anotaciones');
+  if (!cont) return;
+  try {
+    const anotaciones = await Api.get(`/api/historias/${historiaId}/anotaciones`);
+    const anotacionesPorId = new Map(anotaciones.map((a) => [String(a.id), a]));
+    cont.innerHTML = anotaciones.length
+      ? anotaciones
+          .map(
+            (a) => `
+        <div class="tarjeta-registro" data-anotacion-item="${a.id}">
+          <div class="fecha">${escapeHtml(formatearFecha(a.created_at))} — ${escapeHtml(a.usuario_nombre) || '-'}</div>
+          <div class="anotacion-texto">${escapeHtml(a.nota)}</div>
+          ${puedeAnotar ? `<button class="secundario" style="margin-top:8px" data-editar-anotacion="${a.id}">Editar</button>` : ''}
+        </div>`
+          )
+          .join('')
+      : '<div class="vacio">Sin anotaciones todavia.</div>';
+    $$('#lista-anotaciones [data-editar-anotacion]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const anotacion = anotacionesPorId.get(btn.dataset.editarAnotacion);
+        const item = cont.querySelector(`[data-anotacion-item="${anotacion.id}"]`);
+        item.innerHTML = `
+          <div class="campo"><textarea class="texto-edicion">${escapeHtml(anotacion.nota)}</textarea></div>
+          <button class="secundario" data-guardar-anotacion="${anotacion.id}">Guardar</button>
+          <button class="secundario" data-cancelar-anotacion="${anotacion.id}">Cancelar</button>
+        `;
+        item.querySelector('[data-guardar-anotacion]').addEventListener('click', async () => {
+          const nuevaNota = item.querySelector('.texto-edicion').value.trim();
+          if (!nuevaNota) return;
+          try {
+            await Api.put(`/api/historias/${historiaId}/anotaciones/${anotacion.id}`, { nota: nuevaNota });
+            cargarAnotacionesEnfermeria(historiaId, puedeAnotar);
+          } catch (err) {
+            toast(err.message, 'error');
+          }
+        });
+        item.querySelector('[data-cancelar-anotacion]').addEventListener('click', () => {
+          cargarAnotacionesEnfermeria(historiaId, puedeAnotar);
+        });
+      });
+    });
+  } catch (e) {
+    toast(e.message, 'error');
+  }
 }
 
 function abrirFormHistoria(pacienteId, historiaExistente) {
@@ -843,13 +919,14 @@ function renderTablaTurnos(turnos, { compacto }) {
         </td>
         ${
           !compacto
-            ? `<td class="acciones"><button class="secundario" data-editar-turno="${t.id}">Editar</button>${puedeEliminar ? `<button class="peligro" data-eliminar-turno="${t.id}">Eliminar</button>` : ''}</td>`
+            ? `<td>${escapeHtml(t.creado_por_nombre) || '-'}${t.creado_por_nombre ? `<br><span style="color:#889; font-size:12px;">${escapeHtml(formatearFecha(t.created_at))}</span>` : ''}</td>
+               <td class="acciones"><button class="secundario" data-editar-turno="${t.id}">Editar</button>${puedeEliminar ? `<button class="peligro" data-eliminar-turno="${t.id}">Eliminar</button>` : ''}</td>`
             : '<td></td>'
         }
       </tr>`
     )
     .join('');
-  return `<table><thead><tr><th>Hora</th><th>Paciente</th><th>Doctor/a</th><th>Motivo</th><th>Estado</th><th></th></tr></thead><tbody>${filas}</tbody></table>`;
+  return `<table><thead><tr><th>Hora</th><th>Paciente</th><th>Doctor/a</th><th>Motivo</th><th>Estado</th>${!compacto ? '<th>Agendado por</th>' : ''}<th></th></tr></thead><tbody>${filas}</tbody></table>`;
 }
 
 function adjuntarEventosTurnos() {

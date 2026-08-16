@@ -13,6 +13,10 @@ const PERMISOS = {
     etiqueta: 'Eliminar historias clinicas',
     rolesPorDefecto: ['admin', 'doctor'],
   },
+  anotaciones_enfermeria_gestionar: {
+    etiqueta: 'Cargar anotaciones de enfermeria',
+    rolesPorDefecto: ['admin', 'enfermera'],
+  },
   pacientes_eliminar: {
     etiqueta: 'Eliminar pacientes',
     rolesPorDefecto: ['admin'],

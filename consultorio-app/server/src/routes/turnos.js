@@ -10,10 +10,11 @@ router.use(requireAuth);
 
 const SELECT_TURNO = `
   SELECT t.*, p.nombre AS paciente_nombre, p.apellido AS paciente_apellido, p.telefono AS paciente_telefono,
-         u.nombre_completo AS doctor_nombre
+         u.nombre_completo AS doctor_nombre, c.nombre_completo AS creado_por_nombre
   FROM turnos t
   JOIN pacientes p ON p.id = t.paciente_id
   LEFT JOIN usuarios u ON u.id = t.doctor_id
+  LEFT JOIN usuarios c ON c.id = t.creado_por_id
 `;
 
 router.get('/exportar-word', async (req, res) => {
@@ -58,8 +59,8 @@ router.post('/', requireRol('admin', 'recepcion', 'doctor', 'enfermera'), (req, 
     return res.status(400).json({ error: 'Paciente, fecha y hora son requeridos' });
   }
   const info = db
-    .prepare('INSERT INTO turnos (paciente_id, doctor_id, fecha, hora, motivo) VALUES (?, ?, ?, ?, ?)')
-    .run(paciente_id, doctor_id || null, fecha, hora, motivo || null);
+    .prepare('INSERT INTO turnos (paciente_id, doctor_id, fecha, hora, motivo, creado_por_id) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(paciente_id, doctor_id || null, fecha, hora, motivo || null, req.usuario.id);
   res.status(201).json({ id: info.lastInsertRowid });
 });
 
