@@ -527,7 +527,7 @@ function abrirFormPaciente(paciente) {
   });
 }
 
-async function abrirFichaPaciente(id) {
+async function abrirFichaPaciente(id, tabInicial = 'datos') {
   try {
     const paciente = await Api.get(`/api/pacientes/${id}`);
     abrirPanel(`
@@ -542,10 +542,10 @@ async function abrirFichaPaciente(id) {
         </div>
       </div>
       <div class="tabs">
-        <button class="tab-btn activo" data-tab="datos">Datos</button>
-        <button class="tab-btn" data-tab="clinica">Historia clinica</button>
+        <button class="tab-btn ${tabInicial === 'datos' ? 'activo' : ''}" data-tab="datos">Datos</button>
+        <button class="tab-btn ${tabInicial === 'clinica' ? 'activo' : ''}" data-tab="clinica">Historia clinica</button>
       </div>
-      <div id="tab-datos" class="tab-contenido">
+      <div id="tab-datos" class="tab-contenido ${tabInicial === 'datos' ? '' : 'oculto'}">
         <div class="campo"><label>Fecha de nacimiento</label><div>${escapeHtml(paciente.fecha_nacimiento) || '-'}</div></div>
         <div class="campo"><label>Sexo</label><div>${escapeHtml(paciente.sexo) || '-'}</div></div>
         <div class="campo"><label>Estado civil</label><div>${escapeHtml(paciente.estado_civil) || '-'}</div></div>
@@ -555,7 +555,7 @@ async function abrirFichaPaciente(id) {
         <div class="campo"><label>Notas</label><div>${escapeHtml(paciente.notas) || '-'}</div></div>
         <button class="secundario" id="btn-editar-paciente">Editar datos</button>
       </div>
-      <div id="tab-clinica" class="tab-contenido oculto"></div>
+      <div id="tab-clinica" class="tab-contenido ${tabInicial === 'clinica' ? '' : 'oculto'}"></div>
     `);
 
     $('#btn-editar-paciente').addEventListener('click', () => abrirFormPaciente(paciente));
@@ -920,7 +920,7 @@ function renderTablaTurnos(turnos, { compacto }) {
         ${
           !compacto
             ? `<td>${escapeHtml(t.creado_por_nombre) || '-'}${t.creado_por_nombre ? `<br><span style="color:#889; font-size:12px;">${escapeHtml(formatearFecha(t.created_at))}</span>` : ''}</td>
-               <td class="acciones"><button class="secundario" data-editar-turno="${t.id}">Editar</button>${puedeEliminar ? `<button class="peligro" data-eliminar-turno="${t.id}">Eliminar</button>` : ''}</td>`
+               <td class="acciones"><button class="secundario" data-ver-ficha-turno="${t.paciente_id}">Ver ficha</button><button class="secundario" data-editar-turno="${t.id}">Editar</button>${puedeEliminar ? `<button class="peligro" data-eliminar-turno="${t.id}">Eliminar</button>` : ''}</td>`
             : '<td></td>'
         }
       </tr>`
@@ -930,6 +930,9 @@ function renderTablaTurnos(turnos, { compacto }) {
 }
 
 function adjuntarEventosTurnos() {
+  $$('[data-ver-ficha-turno]').forEach((btn) => {
+    btn.addEventListener('click', () => abrirFichaPaciente(btn.dataset.verFichaTurno, 'clinica'));
+  });
   $$('[data-estado]').forEach((sel) => {
     sel.addEventListener('change', async () => {
       try {
