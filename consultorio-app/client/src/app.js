@@ -604,6 +604,7 @@ async function cargarHistoriaClinica(pacienteId) {
                 <div><strong>Peso:</strong> ${escapeHtml(h.peso) || '-'}</div>
                 <div><strong>Diagnostico:</strong> ${escapeHtml(h.diagnostico) || '-'}</div>
                 <div><strong>Tratamiento:</strong> ${escapeHtml(h.tratamiento) || '-'}</div>
+                <div><strong>Examenes:</strong> ${escapeHtml(h.examenes_laboratorio) || '-'}</div>
                 <div class="doctor">Dr./Dra. ${escapeHtml(h.doctor_nombre) || '-'}</div>
                 <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
                   <button class="secundario" data-ver-historia="${h.id}">Ver</button>
