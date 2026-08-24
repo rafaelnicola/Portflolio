@@ -213,7 +213,7 @@ async function generarDocxFormula(historia, paciente, datosConsultorio = {}, con
         children: [
           encabezadoLogo(130),
           new Paragraph({
-            spacing: { after: 260 },
+            spacing: { after: 260, line: 240, lineRule: 'auto' },
             children: [
               new TextRun({ text: 'Nombre: ', bold: true, font: FUENTE_CUERPO, size: TAMANO_CUERPO }),
               new TextRun({ text: `${nombrePaciente(paciente).toUpperCase()}    `, font: FUENTE_CUERPO, size: TAMANO_CUERPO }),
@@ -226,7 +226,9 @@ async function generarDocxFormula(historia, paciente, datosConsultorio = {}, con
             .map(
               (linea) =>
                 new Paragraph({
-                  spacing: { after: 120 },
+                  // line: 240 + lineRule: 'auto' = interlineado sencillo (1.0), en vez de heredar
+                  // el que tenga por defecto la plantilla de Word de quien lo abra.
+                  spacing: { after: 120, line: 240, lineRule: 'auto' },
                   children: [new TextRun({ text: linea, font: FUENTE_CUERPO, size: TAMANO_CUERPO })],
                 })
             ),
