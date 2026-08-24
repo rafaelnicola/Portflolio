@@ -227,8 +227,9 @@ async function generarDocxFormula(historia, paciente, datosConsultorio = {}, con
               (linea) =>
                 new Paragraph({
                   // line: 240 + lineRule: 'auto' = interlineado sencillo (1.0), en vez de heredar
-                  // el que tenga por defecto la plantilla de Word de quien lo abra.
-                  spacing: { after: 120, line: 240, lineRule: 'auto' },
+                  // el que tenga por defecto la plantilla de Word de quien lo abra. after: 0 para que
+                  // no quede espacio extra entre una linea del tratamiento y la siguiente.
+                  spacing: { after: 0, line: 240, lineRule: 'auto' },
                   children: [new TextRun({ text: linea, font: FUENTE_CUERPO, size: TAMANO_CUERPO })],
                 })
             ),
