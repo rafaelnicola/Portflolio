@@ -77,7 +77,15 @@
             <div class="etiqueta">Pacientes registrados</div>
           </div>
         </div>
-        <h3>Turnos de hoy</h3>
+        <div class="barra-superior">
+          <h3 style="margin:0">Turnos de hoy</h3>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <select id="dash-filtro-doctor">
+              <option value="">Todos los doctores</option>
+            </select>
+            <input id="dash-filtro-motivo" type="text" placeholder="Filtrar por motivo..." />
+          </div>
+        </div>
         <div id="dash-tabla-turnos"></div>
       </section>
 
@@ -97,8 +105,12 @@
       <section id="vista-turnos" class="vista oculto">
         <div class="barra-superior">
           <h2 style="margin:0">Agenda</h2>
-          <div style="display:flex; gap:8px; align-items:center;">
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             <input id="turnos-fecha" type="date" />
+            <select id="turnos-filtro-doctor">
+              <option value="">Todos los doctores</option>
+            </select>
+            <input id="turnos-filtro-motivo" type="text" placeholder="Filtrar por motivo..." />
             <button class="secundario" id="btn-descargar-agenda">Descargar lista (Word)</button>
             <button id="btn-nuevo-turno">+ Nuevo turno</button>
           </div>

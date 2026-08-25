@@ -258,11 +258,14 @@ function cambiarVista(vista) {
 
 async function cargarDashboard() {
   try {
+    await poblarSelectDoctores($('#dash-filtro-doctor'));
     const hoy = new Date().toISOString().slice(0, 10);
-    const [turnos, pacientes] = await Promise.all([
-      Api.get(`/api/turnos?fecha=${hoy}`),
-      Api.get('/api/pacientes'),
-    ]);
+    const doctorId = $('#dash-filtro-doctor').value;
+    const motivo = $('#dash-filtro-motivo').value.trim();
+    let query = `fecha=${hoy}`;
+    if (doctorId) query += `&doctor_id=${doctorId}`;
+    if (motivo) query += `&motivo=${encodeURIComponent(motivo)}`;
+    const [turnos, pacientes] = await Promise.all([Api.get(`/api/turnos?${query}`), Api.get('/api/pacientes')]);
     $('#dash-turnos-hoy').textContent = turnos.length;
     $('#dash-pacientes').textContent = pacientes.length;
     $('#dash-tabla-turnos').innerHTML = renderTablaTurnos(turnos, { compacto: true });
@@ -270,6 +273,28 @@ async function cargarDashboard() {
   } catch (e) {
     toast(e.message, 'error');
   }
+}
+
+let debounceFiltroMotivo = null;
+$('#dash-filtro-doctor').addEventListener('change', cargarDashboard);
+$('#dash-filtro-motivo').addEventListener('input', () => {
+  clearTimeout(debounceFiltroMotivo);
+  debounceFiltroMotivo = setTimeout(cargarDashboard, 350);
+});
+
+async function poblarSelectDoctores(selectEl) {
+  if (!doctoresCache.length) {
+    try {
+      doctoresCache = await Api.get('/api/usuarios/doctores');
+    } catch (e) {
+      doctoresCache = [];
+    }
+  }
+  const valorActual = selectEl.value;
+  selectEl.innerHTML =
+    '<option value="">Todos los doctores</option>' +
+    doctoresCache.map((d) => `<option value="${d.id}">${escapeHtml(d.nombre_completo)}</option>`).join('');
+  selectEl.value = valorActual;
 }
 
 /* ---------- Pacientes ---------- */
@@ -878,6 +903,12 @@ async function abrirFormEnviarEmail(historiaId, pacienteId) {
 /* ---------- Turnos / Agenda ---------- */
 
 $('#turnos-fecha').addEventListener('change', cargarTurnos);
+$('#turnos-filtro-doctor').addEventListener('change', cargarTurnos);
+let debounceFiltroMotivoAgenda = null;
+$('#turnos-filtro-motivo').addEventListener('input', () => {
+  clearTimeout(debounceFiltroMotivoAgenda);
+  debounceFiltroMotivoAgenda = setTimeout(cargarTurnos, 350);
+});
 $('#btn-nuevo-turno').addEventListener('click', () => abrirFormTurno());
 $('#btn-descargar-agenda').addEventListener('click', () => {
   const fecha = $('#turnos-fecha').value || fechaHoy();
@@ -891,8 +922,14 @@ function fechaHoy() {
 async function cargarTurnos() {
   if (!$('#turnos-fecha').value) $('#turnos-fecha').value = fechaHoy();
   try {
+    await poblarSelectDoctores($('#turnos-filtro-doctor'));
     const fecha = $('#turnos-fecha').value;
-    const turnos = await Api.get(`/api/turnos?fecha=${fecha}`);
+    const doctorId = $('#turnos-filtro-doctor').value;
+    const motivo = $('#turnos-filtro-motivo').value.trim();
+    let query = `fecha=${fecha}`;
+    if (doctorId) query += `&doctor_id=${doctorId}`;
+    if (motivo) query += `&motivo=${encodeURIComponent(motivo)}`;
+    const turnos = await Api.get(`/api/turnos?${query}`);
     $('#turnos-tabla').innerHTML = renderTablaTurnos(turnos, { compacto: false });
     adjuntarEventosTurnos();
   } catch (e) {

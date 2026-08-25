@@ -33,7 +33,7 @@ router.get('/exportar-word', async (req, res) => {
 });
 
 router.get('/', (req, res) => {
-  const { fecha, doctor_id, paciente_id } = req.query;
+  const { fecha, doctor_id, paciente_id, motivo } = req.query;
   const condiciones = [];
   const params = [];
   if (fecha) {
@@ -47,6 +47,10 @@ router.get('/', (req, res) => {
   if (paciente_id) {
     condiciones.push('t.paciente_id = ?');
     params.push(paciente_id);
+  }
+  if (motivo) {
+    condiciones.push('t.motivo LIKE ?');
+    params.push(`%${motivo}%`);
   }
   const where = condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : '';
   const turnos = db.prepare(`${SELECT_TURNO} ${where} ORDER BY t.fecha, t.hora`).all(...params);
