@@ -247,6 +247,18 @@ table { width: 100%; border-collapse: collapse; background: white; border-radius
 th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--gris-borde); }
 th { background: var(--azul-claro); color: var(--azul-oscuro); font-size: 12px; text-transform: uppercase; }
 tr:hover td { background: #fafcfd; }
+
+/* La lista de turnos puede tener muchas filas: se muestra en un contenedor con scroll
+   propio (en vez de dejar que crezca sin limite) y con el encabezado siempre visible,
+   para que quede claro que hay mas filas mas abajo si no entran todas en la pantalla. */
+#turnos-tabla {
+  max-height: calc(100vh - 260px);
+  overflow-y: auto;
+  border: 1px solid var(--gris-borde);
+  border-radius: 8px;
+}
+#turnos-tabla table { border-radius: 0; }
+#turnos-tabla thead th { position: sticky; top: 0; z-index: 1; }
 td.acciones { display: flex; gap: 6px; }
 td.acciones button { padding: 5px 10px; font-size: 12px; }
 

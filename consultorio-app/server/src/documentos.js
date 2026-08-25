@@ -252,10 +252,11 @@ async function generarDocxAgenda(turnos, fecha) {
   const filas = [
     new TableRow({
       children: [
-        celda('Hora', { encabezado: true, ancho: 12 }),
-        celda('Paciente', { encabezado: true, ancho: 38 }),
-        celda('Teléfono', { encabezado: true, ancho: 20 }),
-        celda('Doctor/a', { encabezado: true, ancho: 20 }),
+        celda('Hora', { encabezado: true, ancho: 10 }),
+        celda('Paciente', { encabezado: true, ancho: 28 }),
+        celda('Teléfono', { encabezado: true, ancho: 15 }),
+        celda('Doctor/a', { encabezado: true, ancho: 15 }),
+        celda('Motivo', { encabezado: true, ancho: 22 }),
         celda('Estado', { encabezado: true, ancho: 10 }),
       ],
     }),
@@ -267,6 +268,7 @@ async function generarDocxAgenda(turnos, fecha) {
             celda(`${t.paciente_apellido}, ${t.paciente_nombre}`),
             celda(t.paciente_telefono || '-'),
             celda(t.doctor_nombre || '-'),
+            celda(t.motivo || '-'),
             celda(t.estado),
           ],
         })
