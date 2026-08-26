@@ -311,6 +311,10 @@ cada 15 segundos en segundo plano mientras hay una sesión iniciada. Al hacer cl
 se enfoca y abre directo en la pantalla de Chat. La primera vez que un usuario inicia sesión, Windows puede
 pedir permiso para mostrar notificaciones de la app — hay que aceptarlo para que funcione.
 
+> En **Windows 7/8** no existe el sistema de notificaciones de Windows 10/11 (no es algo que la app pueda
+> agregar), así que en su lugar el ícono de la app en la barra de tareas **parpadea** cuando llega un mensaje
+> nuevo, hasta que se abre la ventana — funciona en cualquier versión de Windows.
+
 ### Inicio automático del servidor con Windows
 
 Para que el servidor arranque solo (por ejemplo después de un corte de luz o un reinicio), sin que nadie

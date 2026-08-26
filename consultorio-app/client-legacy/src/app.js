@@ -1562,6 +1562,10 @@ function pedirPermisoNotificaciones() {
 }
 
 function notificarMensajeChat(nombre) {
+  // En Windows 7/8 no existe el sistema de notificaciones de Windows 10/11,
+  // asi que ademas (o en vez) de la notificacion nativa, se hace parpadear
+  // el icono de la barra de tareas — eso si funciona en cualquier version.
+  if (window.notificacionesAPI) window.notificacionesAPI.avisarMensajeNuevo();
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   try {
     const notificacion = new Notification('Biomedical Center - Chat', {
