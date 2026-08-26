@@ -57,13 +57,18 @@ ipcMain.handle('archivo:guardar', async (event, { nombreSugerido, datos }) => {
   return { ok: true, filePath, abierto: !errorAlAbrir };
 });
 
+app.setAppUserModelId('com.biomedicalcenter.cliente');
+
 app.whenReady().then(() => {
-  // Permite el acceso a la camara para poder tomarle una foto al paciente
-  // desde la app. Todo lo demas queda denegado por seguridad.
+  // Permite el acceso a la camara para poder tomarle una foto al paciente,
+  // y a las notificaciones para avisar de mensajes nuevos del chat aunque
+  // la app este minimizada o en segundo plano. Todo lo demas queda denegado.
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-    callback(permission === 'media');
+    callback(permission === 'media' || permission === 'notifications');
   });
-  session.defaultSession.setPermissionCheckHandler((webContents, permission) => permission === 'media');
+  session.defaultSession.setPermissionCheckHandler(
+    (webContents, permission) => permission === 'media' || permission === 'notifications'
+  );
 
   createWindow();
 });

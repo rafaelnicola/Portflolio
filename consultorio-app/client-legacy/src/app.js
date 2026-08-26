@@ -192,6 +192,7 @@ $('#login-cambiar-servidor').addEventListener('click', async () => {
 
 $('#btn-logout').addEventListener('click', () => {
   detenerPollingChat();
+  detenerAvisosChatGlobal();
   Api.setToken('');
   usuarioActual = null;
   mostrarLogin();
@@ -207,7 +208,8 @@ function iniciarApp() {
   $('#nav-configuracion').classList.toggle('oculto', usuarioActual.rol !== 'admin');
   cambiarVista('dashboard');
   actualizarBadgeAyuda();
-  actualizarBadgeChat();
+  pedirPermisoNotificaciones();
+  iniciarAvisosChatGlobal();
 }
 
 async function actualizarBadgeAyuda() {
@@ -1115,11 +1117,15 @@ async function abrirFormTurno(turno) {
       if (esEdicion) {
         await Api.put(`/api/turnos/${turno.id}`, datos);
         toast('Turno actualizado', 'exito');
+        cerrarPanel();
       } else {
         await Api.post('/api/turnos', datos);
-        toast('Turno creado', 'exito');
+        toast('Turno creado. Cambia la fecha y volve a crear si es otra sesion.', 'exito');
+        // Se deja el panel abierto (con los mismos datos) para agendar varias
+        // sesiones del mismo paciente sin tener que volver a llenar el formulario.
+        const inputFecha = document.querySelector('#form-turno [name="fecha"]');
+        if (inputFecha) inputFecha.focus();
       }
-      cerrarPanel();
       cargarTurnos();
     } catch (err) {
       toast(err.message, 'error');
@@ -1485,16 +1491,71 @@ $('#form-chat').addEventListener('submit', async (e) => {
   }
 });
 
+// Permiso de notificaciones de escritorio (para avisar de mensajes nuevos
+// del chat aunque la ventana este minimizada o en otra pantalla).
+function pedirPermisoNotificaciones() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function notificarMensajeChat(nombre) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    const notificacion = new Notification('Biomedical Center - Chat', {
+      body: `Nuevo mensaje de ${nombre}`,
+    });
+    notificacion.onclick = () => {
+      if (window.focus) window.focus();
+      cambiarVista('chat');
+    };
+  } catch (e) {
+    // si el sistema operativo rechaza la notificacion, se ignora
+  }
+}
+
+// Cuenta de mensajes sin leer por contacto en el ultimo chequeo, para saber
+// cuando aumenta (y avisar) sin depender de estar en la pantalla de Chat.
+let chatConteoAnterior = {};
+let chatBaseInicial = true;
+let intervalAvisosChatGlobal = null;
+
+function iniciarAvisosChatGlobal() {
+  chatConteoAnterior = {};
+  chatBaseInicial = true;
+  actualizarBadgeChat();
+  detenerAvisosChatGlobal();
+  intervalAvisosChatGlobal = setInterval(actualizarBadgeChat, 15000);
+}
+
+function detenerAvisosChatGlobal() {
+  if (intervalAvisosChatGlobal) {
+    clearInterval(intervalAvisosChatGlobal);
+    intervalAvisosChatGlobal = null;
+  }
+}
+
 async function actualizarBadgeChat() {
   const navChat = $('#nav-chat');
   const existente = navChat.querySelector('.badge-alerta');
   if (existente) existente.remove();
   try {
-    const { noLeidos } = await Api.get('/api/chat/no-leidos');
-    if (noLeidos > 0) {
+    const contactos = await Api.get('/api/chat/usuarios');
+    let total = 0;
+    contactos.forEach((c) => {
+      total += c.no_leidos;
+      const anterior = chatConteoAnterior[c.id] || 0;
+      if (!chatBaseInicial && c.no_leidos > anterior && c.id !== chatContactoActivoId) {
+        notificarMensajeChat(c.nombre_completo);
+      }
+      chatConteoAnterior[c.id] = c.no_leidos;
+    });
+    chatBaseInicial = false;
+    if (total > 0) {
       const badge = document.createElement('span');
       badge.className = 'badge-alerta';
-      badge.textContent = noLeidos;
+      badge.textContent = total;
       navChat.appendChild(badge);
     }
   } catch (e) {

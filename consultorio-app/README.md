@@ -166,6 +166,12 @@ lista desplegable — pensado para consultorios con muchos pacientes registrados
 quién agendó cada turno y cuándo — ese dato no se puede modificar (ni siquiera el admin) y no aparece en la
 lista descargada en Word, solo en la pantalla.
 
+Al crear un turno nuevo, el panel **no se cierra** después de guardar — queda abierto con los mismos datos
+(paciente, doctor/a, motivo) para poder agendar varias sesiones del mismo paciente en distintas fechas sin
+volver a llenar el formulario cada vez: solo hay que cambiar la fecha (y la hora si corresponde) y volver a
+darle "Crear turno". El panel se cierra únicamente con el botón "Cerrar". Al editar un turno existente, el
+panel sí se cierra al guardar, como antes.
+
 ## Roles y permisos
 
 | Acción                                    | Recepción | Enfermero/a | Doctor/a | Admin |
@@ -293,6 +299,12 @@ Mensajería privada entre usuarios del sistema: se elige un usuario de la lista 
 persona (cada conversación es privada, solo la ven los dos usuarios involucrados). Se actualiza solo cada 5
 segundos mientras la pantalla de Chat está abierta, y avisa con un número en el menú lateral — y al lado de
 cada contacto — cuando hay mensajes nuevos sin leer.
+
+Además, aunque no se esté en la pantalla de Chat (o la app esté minimizada / detrás de otra ventana), llega
+una **notificación de escritorio de Windows** apenas entra un mensaje nuevo — la app revisa mensajes nuevos
+cada 15 segundos en segundo plano mientras hay una sesión iniciada. Al hacer clic en la notificación, la app
+se enfoca y abre directo en la pantalla de Chat. La primera vez que un usuario inicia sesión, Windows puede
+pedir permiso para mostrar notificaciones de la app — hay que aceptarlo para que funcione.
 
 ### Inicio automático del servidor con Windows
 
