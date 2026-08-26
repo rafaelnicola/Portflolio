@@ -840,6 +840,11 @@ function abrirFormHistoria(pacienteId, historiaExistente) {
         <div class="campo"><label>Talla (estatura)</label><input name="talla" placeholder="Ej: 1.70m" value="${escapeHtml(historiaExistente?.talla)}" /></div>
       </div>
       <div class="campo"><label>Exploracion fisica</label><textarea name="exploracion_fisica">${escapeHtml(historiaExistente?.exploracion_fisica)}</textarea></div>
+      <div class="campo buscador-paciente">
+        <label>Buscar código CIE-10 (opcional)</label>
+        <input type="text" id="historia-buscar-cie10" autocomplete="off" placeholder="Código o nombre del diagnóstico..." />
+        <div id="historia-resultados-cie10" class="resultados-buscador oculto"></div>
+      </div>
       <div class="campo"><label>Diagnostico</label><textarea name="diagnostico">${escapeHtml(historiaExistente?.diagnostico)}</textarea></div>
       <div class="campo"><label>Tratamiento</label><textarea name="tratamiento">${escapeHtml(historiaExistente?.tratamiento)}</textarea></div>
       <div class="campo"><label>Examenes de laboratorio</label><textarea name="examenes_laboratorio">${escapeHtml(historiaExistente?.examenes_laboratorio)}</textarea></div>
@@ -854,6 +859,11 @@ function abrirFormHistoria(pacienteId, historiaExistente) {
   form.peso.addEventListener('input', actualizarImc);
   form.talla.addEventListener('input', actualizarImc);
   actualizarImc();
+  configurarBuscadorCie10({
+    inputBuscar: $('#historia-buscar-cie10'),
+    resultadosDiv: $('#historia-resultados-cie10'),
+    textareaDestino: form.diagnostico,
+  });
   $('#form-historia').addEventListener('submit', async (e) => {
     e.preventDefault();
     const datos = Object.fromEntries(new FormData(e.target).entries());
@@ -1049,6 +1059,57 @@ function configurarBuscadorPaciente({ inputBuscar, inputId, resultadosDiv }) {
     if (!item) return;
     inputId.value = item.dataset.id;
     inputBuscar.value = item.dataset.nombre;
+    ocultarResultados();
+  });
+
+  inputBuscar.addEventListener('blur', () => {
+    setTimeout(ocultarResultados, 150);
+  });
+}
+
+// Buscador de codigos CIE-10 (por codigo o por texto) para autocompletar el
+// campo Diagnostico. Elegir un resultado llena el texto, pero se puede seguir
+// editando libremente despues (no queda bloqueado ni ligado al codigo).
+function configurarBuscadorCie10({ inputBuscar, resultadosDiv, textareaDestino }) {
+  let debounceId = null;
+
+  function ocultarResultados() {
+    resultadosDiv.classList.add('oculto');
+    resultadosDiv.innerHTML = '';
+  }
+
+  inputBuscar.addEventListener('input', () => {
+    clearTimeout(debounceId);
+    const q = inputBuscar.value.trim();
+    if (q.length < 2) {
+      ocultarResultados();
+      return;
+    }
+    debounceId = setTimeout(async () => {
+      try {
+        const resultados = await Api.get(`/api/cie10?q=${encodeURIComponent(q)}`);
+        resultadosDiv.innerHTML = resultados.length
+          ? resultados
+              .map(
+                (r) => `
+              <div class="resultado-item" data-codigo="${escapeHtml(r.codigo)}" data-nombre="${escapeHtml(r.nombre)}">
+                <strong>${escapeHtml(r.codigo)} — ${escapeHtml(r.nombre)}</strong>
+              </div>`
+              )
+              .join('')
+          : '<div class="resultado-item vacio">Sin resultados</div>';
+        resultadosDiv.classList.remove('oculto');
+      } catch (e) {
+        ocultarResultados();
+      }
+    }, 250);
+  });
+
+  resultadosDiv.addEventListener('mousedown', (e) => {
+    const item = e.target.closest('[data-codigo]');
+    if (!item) return;
+    textareaDestino.value = `${item.dataset.codigo} - ${item.dataset.nombre}`;
+    inputBuscar.value = '';
     ocultarResultados();
   });
 

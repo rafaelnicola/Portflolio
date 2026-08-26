@@ -105,12 +105,22 @@ CREATE TABLE IF NOT EXISTS chat_mensajes (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Tabla de referencia CIE-10 (Ministerio de Salud / SISPRO), para el
+-- autocompletado del campo Diagnostico de la historia clinica. Se carga una
+-- sola vez desde data/cie10.json (ver poblarCie10SiFalta mas abajo).
+CREATE TABLE IF NOT EXISTS cie10 (
+  codigo TEXT PRIMARY KEY,
+  nombre TEXT NOT NULL,
+  capitulo TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_turnos_fecha ON turnos(fecha);
 CREATE INDEX IF NOT EXISTS idx_chat_conversacion ON chat_mensajes(remitente_id, destinatario_id);
 CREATE INDEX IF NOT EXISTS idx_turnos_paciente ON turnos(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_historias_paciente ON historias_clinicas(paciente_id);
 CREATE INDEX IF NOT EXISTS idx_pacientes_apellido ON pacientes(apellido);
 CREATE INDEX IF NOT EXISTS idx_anotaciones_historia ON anotaciones_enfermeria(historia_id);
+CREATE INDEX IF NOT EXISTS idx_cie10_nombre ON cie10(nombre);
 `);
 
 function columnaExiste(tabla, columna) {
@@ -175,6 +185,29 @@ agregarColumnaSiFalta('historias_clinicas', 'talla', 'TEXT');
 agregarColumnaSiFalta('historias_clinicas', 'exploracion_fisica', 'TEXT');
 agregarColumnaSiFalta('historias_clinicas', 'examenes_laboratorio', 'TEXT');
 agregarColumnaSiFalta('turnos', 'creado_por_id', 'INTEGER REFERENCES usuarios(id) ON DELETE SET NULL');
+
+// Carga la tabla de referencia CIE-10 desde el archivo local la primera vez
+// (queda vacia si el archivo no esta, sin romper el arranque del servidor).
+function poblarCie10SiFalta() {
+  const cantidad = db.prepare('SELECT COUNT(*) AS n FROM cie10').get().n;
+  if (cantidad > 0) return;
+  const rutaJson = path.join(__dirname, 'seed', 'cie10.json');
+  if (!fs.existsSync(rutaJson)) return;
+  const filas = JSON.parse(fs.readFileSync(rutaJson, 'utf8'));
+  const insertar = db.prepare('INSERT OR IGNORE INTO cie10 (codigo, nombre, capitulo) VALUES (?, ?, ?)');
+  db.exec('BEGIN');
+  try {
+    for (const [codigo, nombre, capitulo] of filas) {
+      insertar.run(codigo, nombre, capitulo || null);
+    }
+    db.exec('COMMIT');
+    console.log(`Tabla CIE-10 cargada: ${filas.length} codigos.`);
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+}
+poblarCie10SiFalta();
 
 const userCount = db.prepare('SELECT COUNT(*) AS n FROM usuarios').get().n;
 if (userCount === 0) {

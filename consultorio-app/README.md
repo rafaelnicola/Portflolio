@@ -155,6 +155,11 @@ exploración física, exámenes de laboratorio, observaciones, etc.).
 El campo **IMC** de los signos vitales se calcula solo, a partir del peso y la talla (estatura) cargados —
 no se escribe a mano.
 
+El campo **Diagnóstico** tiene arriba un buscador de códigos **CIE-10** (por código, ej. "J45", o por texto,
+ej. "asma") con la tabla oficial de referencia del Ministerio de Salud / SISPRO. Al elegir un resultado se
+autocompleta el campo con "código - nombre", pero se puede seguir editando libremente después (agregar
+observaciones, corregir, etc.) — no queda bloqueado ni ligado al código elegido.
+
 Dentro del detalle de cada valoración ("Ver") hay una sección de **anotaciones de enfermería**, para
 registrar seguimientos posteriores a la consulta (por ejemplo, cuando el paciente asiste a una terapia unos
 días después). Solo quien tenga el permiso correspondiente (enfermero/a o admin por defecto) puede
