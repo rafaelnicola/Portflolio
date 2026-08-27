@@ -166,6 +166,10 @@ días después). Solo quien tenga el permiso correspondiente (enfermero/a o admi
 cargarlas o editarlas — el resto de los usuarios las puede ver, pero no modificar. A diferencia de la
 valoración en sí, estas anotaciones **no se bloquean a las 48hs**, se pueden editar en cualquier momento.
 
+Tanto en **Inicio** como en la **Agenda** se puede filtrar la lista de turnos por paciente (buscador de
+texto), por doctor/a (lista desplegable) y por motivo de consulta (buscador de texto) — los tres filtros se
+pueden combinar entre sí.
+
 Al agendar un turno, el campo "Paciente" es un buscador (escribí nombre, apellido o DNI) en vez de una
 lista desplegable — pensado para consultorios con muchos pacientes registrados. La Agenda muestra además
 quién agendó cada turno y cuándo — ese dato no se puede modificar (ni siquiera el admin) y no aparece en la

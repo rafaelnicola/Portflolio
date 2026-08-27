@@ -264,9 +264,11 @@ async function cargarDashboard() {
     const hoy = new Date().toISOString().slice(0, 10);
     const doctorId = $('#dash-filtro-doctor').value;
     const motivo = $('#dash-filtro-motivo').value.trim();
+    const paciente = $('#dash-filtro-paciente').value.trim();
     let query = `fecha=${hoy}`;
     if (doctorId) query += `&doctor_id=${doctorId}`;
     if (motivo) query += `&motivo=${encodeURIComponent(motivo)}`;
+    if (paciente) query += `&paciente=${encodeURIComponent(paciente)}`;
     const [turnos, pacientes] = await Promise.all([Api.get(`/api/turnos?${query}`), Api.get('/api/pacientes')]);
     $('#dash-turnos-hoy').textContent = turnos.length;
     $('#dash-pacientes').textContent = pacientes.length;
@@ -278,10 +280,15 @@ async function cargarDashboard() {
 }
 
 let debounceFiltroMotivo = null;
+let debounceFiltroPaciente = null;
 $('#dash-filtro-doctor').addEventListener('change', cargarDashboard);
 $('#dash-filtro-motivo').addEventListener('input', () => {
   clearTimeout(debounceFiltroMotivo);
   debounceFiltroMotivo = setTimeout(cargarDashboard, 350);
+});
+$('#dash-filtro-paciente').addEventListener('input', () => {
+  clearTimeout(debounceFiltroPaciente);
+  debounceFiltroPaciente = setTimeout(cargarDashboard, 350);
 });
 
 async function poblarSelectDoctores(selectEl) {
@@ -928,6 +935,11 @@ $('#turnos-filtro-motivo').addEventListener('input', () => {
   clearTimeout(debounceFiltroMotivoAgenda);
   debounceFiltroMotivoAgenda = setTimeout(cargarTurnos, 350);
 });
+let debounceFiltroPacienteAgenda = null;
+$('#turnos-filtro-paciente').addEventListener('input', () => {
+  clearTimeout(debounceFiltroPacienteAgenda);
+  debounceFiltroPacienteAgenda = setTimeout(cargarTurnos, 350);
+});
 $('#btn-nuevo-turno').addEventListener('click', () => abrirFormTurno());
 $('#btn-descargar-agenda').addEventListener('click', () => {
   const fecha = $('#turnos-fecha').value || fechaHoy();
@@ -945,9 +957,11 @@ async function cargarTurnos() {
     const fecha = $('#turnos-fecha').value;
     const doctorId = $('#turnos-filtro-doctor').value;
     const motivo = $('#turnos-filtro-motivo').value.trim();
+    const paciente = $('#turnos-filtro-paciente').value.trim();
     let query = `fecha=${fecha}`;
     if (doctorId) query += `&doctor_id=${doctorId}`;
     if (motivo) query += `&motivo=${encodeURIComponent(motivo)}`;
+    if (paciente) query += `&paciente=${encodeURIComponent(paciente)}`;
     const turnos = await Api.get(`/api/turnos?${query}`);
     $('#turnos-tabla').innerHTML = renderTablaTurnos(turnos, { compacto: false });
     adjuntarEventosTurnos();
