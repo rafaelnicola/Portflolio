@@ -626,12 +626,12 @@ async function cargarHistoriaClinica(pacienteId) {
                   (h) => `
               <div class="tarjeta-registro">
                 <div class="fecha">${escapeHtml(formatearFecha(h.fecha))} ${h.editable ? '' : '<span style="color:#a12b2b; font-weight:600;">· Bloqueada (mas de 48hs)</span>'}</div>
-                <div><strong>Motivo:</strong> ${escapeHtml(h.motivo_consulta) || '-'}</div>
+                <div><strong>Motivo:</strong> ${conSaltos(h.motivo_consulta)}</div>
                 <div><strong>Presion arterial:</strong> ${escapeHtml(h.presion_arterial) || '-'}</div>
                 <div><strong>Peso:</strong> ${escapeHtml(h.peso) || '-'}</div>
-                <div><strong>Diagnostico:</strong> ${escapeHtml(h.diagnostico) || '-'}</div>
-                <div><strong>Tratamiento:</strong> ${escapeHtml(h.tratamiento) || '-'}</div>
-                <div><strong>Examenes:</strong> ${escapeHtml(h.examenes_laboratorio) || '-'}</div>
+                <div><strong>Diagnostico:</strong> ${conSaltos(h.diagnostico)}</div>
+                <div><strong>Tratamiento:</strong> ${conSaltos(h.tratamiento)}</div>
+                <div><strong>Examenes:</strong> ${conSaltos(h.examenes_laboratorio)}</div>
                 <div class="doctor">Dr./Dra. ${escapeHtml(h.doctor_nombre) || '-'}</div>
                 <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
                   <button class="secundario" data-ver-historia="${h.id}">Ver</button>
@@ -704,8 +704,15 @@ async function cargarHistoriaClinica(pacienteId) {
   }
 }
 
+// Envuelve el texto en un span con salto de linea preservado, para que un
+// texto escrito en varias lineas (tratamiento, examenes, etc.) no se junte
+// todo en una sola linea al mostrarlo.
+function conSaltos(texto) {
+  return `<span style="white-space:pre-line">${escapeHtml(texto) || '-'}</span>`;
+}
+
 function filaDetalle(etiqueta, valor) {
-  return `<div style="margin-bottom:10px"><strong>${escapeHtml(etiqueta)}:</strong> ${escapeHtml(valor) || '-'}</div>`;
+  return `<div style="margin-bottom:10px"><strong>${escapeHtml(etiqueta)}:</strong> ${conSaltos(valor)}</div>`;
 }
 
 async function abrirDetalleHistoria(historia) {
