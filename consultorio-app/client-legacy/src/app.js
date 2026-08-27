@@ -1115,7 +1115,12 @@ function configurarBuscadorCie10({ inputBuscar, resultadosDiv, textareaDestino }
   resultadosDiv.addEventListener('mousedown', (e) => {
     const item = e.target.closest('[data-codigo]');
     if (!item) return;
-    textareaDestino.value = `${item.dataset.codigo} - ${item.dataset.nombre}`;
+    const nuevaLinea = `${item.dataset.codigo} - ${item.dataset.nombre}`;
+    // Se agrega como una linea nueva en vez de reemplazar, para poder cargar
+    // varios diagnosticos (uno por linea) sin perder los que ya se eligieron.
+    textareaDestino.value = textareaDestino.value.trim()
+      ? `${textareaDestino.value}\n${nuevaLinea}`
+      : nuevaLinea;
     inputBuscar.value = '';
     ocultarResultados();
   });
