@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Biomedical Center</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Configuracion del servidor (primer uso) -->
+  <div id="pantalla-config" class="pantalla-centrada oculto">
+    <div class="tarjeta">
+      <h1>Configurar servidor</h1>
+      <p class="subtitulo">Ingresa la direccion de red del servidor del consultorio (la PC donde corre el backend).</p>
+      <div id="config-error" class="error-msg oculto"></div>
+      <div class="campo">
+        <label>Direccion del servidor</label>
+        <input id="config-url" type="text" placeholder="http://192.168.1.10:4000" />
+      </div>
+      <button id="config-guardar" style="width:100%">Guardar y continuar</button>
+    </div>
+  </div>
+
+  <!-- Login -->
+  <div id="pantalla-login" class="pantalla-centrada oculto">
+    <div class="tarjeta">
+      <div class="marca-icono"><img src="assets/logo-mark.png" alt="Biomedical Center" /></div>
+      <h1>Biomedical Center</h1>
+      <p class="subtitulo">Ingresa tus credenciales para continuar</p>
+      <div id="login-error" class="error-msg oculto"></div>
+      <form id="form-login">
+        <div class="campo">
+          <label>Usuario</label>
+          <input id="login-username" type="text" autocomplete="username" required />
+        </div>
+        <div class="campo">
+          <label>Contraseña</label>
+          <input id="login-password" type="password" autocomplete="current-password" required />
+        </div>
+        <button type="submit" style="width:100%">Ingresar</button>
+      </form>
+      <button id="login-cambiar-servidor" class="secundario" style="width:100%; margin-top:10px;">Cambiar servidor</button>
+    </div>
+  </div>
+
+  <!-- App principal -->
+  <div id="app" class="oculto">
+    <div class="sidebar">
+      <div class="logo"><span class="marca-icono"><img src="assets/logo-mark.png" alt="" /></span><span class="texto">Biomedical Center</span></div>
+      <nav>
+        <button data-vista="dashboard" class="nav-btn activo">Inicio</button>
+        <button data-vista="pacientes" class="nav-btn">Pacientes</button>
+        <button data-vista="turnos" class="nav-btn">Agenda</button>
+        <button data-vista="usuarios" class="nav-btn oculto" id="nav-usuarios">Usuarios</button>
+        <button data-vista="configuracion" class="nav-btn oculto" id="nav-configuracion">Configuracion</button>
+        <button data-vista="chat" class="nav-btn" id="nav-chat">Chat</button>
+        <button data-vista="ayuda" class="nav-btn" id="nav-ayuda">Ayuda</button>
+      </nav>
+      <div class="usuario-info">
+        <div class="nombre" id="info-nombre"></div>
+        <div id="info-rol"></div>
+        <button id="btn-logout" class="secundario">Cerrar sesion</button>
+      </div>
+    </div>
+
+    <div class="contenido">
+      <!-- Dashboard -->
+      <section id="vista-dashboard" class="vista">
+        <h2>Inicio</h2>
+        <div class="dashboard-tarjetas">
+          <div class="dashboard-tarjeta">
+            <div class="numero" id="dash-turnos-hoy">-</div>
+            <div class="etiqueta">Turnos de hoy</div>
+          </div>
+          <div class="dashboard-tarjeta">
+            <div class="numero" id="dash-pacientes">-</div>
+            <div class="etiqueta">Pacientes registrados</div>
+          </div>
+        </div>
+        <div class="barra-superior">
+          <h3 style="margin:0">Turnos de hoy</h3>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input id="dash-filtro-paciente" type="text" placeholder="Buscar por paciente..." />
+            <select id="dash-filtro-doctor">
+              <option value="">Todos los doctores</option>
+            </select>
+            <input id="dash-filtro-motivo" type="text" placeholder="Filtrar por motivo..." />
+          </div>
+        </div>
+        <div id="dash-tabla-turnos"></div>
+      </section>
+
+      <!-- Pacientes -->
+      <section id="vista-pacientes" class="vista oculto">
+        <div class="barra-superior">
+          <h2 style="margin:0">Pacientes</h2>
+          <div style="display:flex; gap:8px;">
+            <input id="pacientes-buscar" type="text" placeholder="Buscar por nombre, apellido o DNI..." />
+            <button class="secundario oculto" id="btn-papelera-pacientes">Papelera</button>
+            <button id="btn-nuevo-paciente">+ Nuevo paciente</button>
+          </div>
+        </div>
+        <div id="pacientes-tabla"></div>
+      </section>
+
+      <!-- Turnos / Agenda -->
+      <section id="vista-turnos" class="vista oculto">
+        <div class="barra-superior">
+          <h2 style="margin:0">Agenda</h2>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <input id="turnos-fecha" type="date" />
+            <input id="turnos-filtro-paciente" type="text" placeholder="Buscar por paciente..." />
+            <select id="turnos-filtro-doctor">
+              <option value="">Todos los doctores</option>
+            </select>
+            <input id="turnos-filtro-motivo" type="text" placeholder="Filtrar por motivo..." />
+            <button class="secundario" id="btn-descargar-agenda">Descargar lista (Word)</button>
+            <button id="btn-nuevo-turno">+ Nuevo turno</button>
+          </div>
+        </div>
+        <div id="turnos-tabla"></div>
+      </section>
+
+      <!-- Usuarios (admin) -->
+      <section id="vista-usuarios" class="vista oculto">
+        <div class="barra-superior">
+          <h2 style="margin:0">Usuarios</h2>
+          <button id="btn-nuevo-usuario">+ Nuevo usuario</button>
+        </div>
+        <div id="usuarios-tabla"></div>
+      </section>
+
+      <!-- Configuracion (admin) -->
+      <section id="vista-configuracion" class="vista oculto">
+        <h2>Datos del consultorio</h2>
+        <p style="color:#667; max-width:520px;">
+          Aparecen en el membrete y el pie de pagina de la formula medica que se exporta a Word.
+        </p>
+        <div style="max-width:420px; margin-bottom:32px;">
+          <form id="form-consultorio">
+            <div class="campo"><label>Direccion</label><input name="direccion" placeholder="Calle 25 No. 16-101 Barrio Los Alcázares" /></div>
+            <div class="campo"><label>Telefonos</label><input name="telefono" placeholder="4336041 - 3053282029" /></div>
+            <button type="submit" style="width:100%">Guardar datos del consultorio</button>
+          </form>
+        </div>
+
+        <h2>Configuracion de correo (SMTP)</h2>
+        <p style="color:#667; max-width:520px;">
+          Cargá los datos del correo que se va a usar para enviar historias clinicas por email.
+          Si usás Gmail, el servidor es <code>smtp.gmail.com</code>, puerto <code>587</code>, y en
+          "contraseña" tenés que usar una <strong>contraseña de aplicación</strong> (no la contraseña normal
+          de tu cuenta de Google).
+        </p>
+        <div style="max-width:420px;">
+          <form id="form-smtp">
+            <div class="campo"><label>Servidor SMTP</label><input name="host" placeholder="smtp.gmail.com" required /></div>
+            <div class="grid-2">
+              <div class="campo"><label>Puerto</label><input name="puerto" placeholder="587" /></div>
+              <div class="campo">
+                <label>Conexion segura (SSL)</label>
+                <select name="seguro">
+                  <option value="">No (recomendado con puerto 587)</option>
+                  <option value="1">Si (puerto 465)</option>
+                </select>
+              </div>
+            </div>
+            <div class="campo"><label>Usuario / email</label><input name="usuario" type="email" required /></div>
+            <div class="campo"><label>Contraseña</label><input name="password" type="password" placeholder="Dejar vacio para no cambiarla" /></div>
+            <div class="campo"><label>Remitente que vera el paciente</label><input name="remitente" placeholder="Igual al usuario si se deja vacio" /></div>
+            <button type="submit" style="width:100%">Guardar configuracion</button>
+          </form>
+          <p id="smtp-estado" style="color:#667; margin-top:12px;"></p>
+        </div>
+
+        <h2>Seguridad</h2>
+        <p style="color:#667; max-width:520px;">
+          Ademas del backup automatico semanal, podes generar una copia de seguridad al instante
+          (pacientes, turnos, historias clinicas y fotos) y guardarla donde quieras, por ejemplo en un
+          pendrive u otro dispositivo externo.
+        </p>
+        <button id="btn-backup-ahora" class="secundario">Hacer copia de seguridad ahora</button>
+      </section>
+
+      <!-- Chat interno -->
+      <section id="vista-chat" class="vista oculto">
+        <h2>Chat</h2>
+        <div class="chat-layout">
+          <div id="chat-contactos" class="chat-contactos"></div>
+          <div class="chat-conversacion">
+            <div id="chat-titulo-conversacion" class="chat-titulo-conversacion">Elegi un usuario para chatear</div>
+            <div id="chat-mensajes" class="chat-mensajes"></div>
+            <form id="form-chat" class="chat-form oculto">
+              <input id="chat-input" type="text" placeholder="Escribi un mensaje..." autocomplete="off" required />
+              <button type="submit">Enviar</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- Ayuda -->
+      <section id="vista-ayuda" class="vista oculto">
+        <h2>Ayuda</h2>
+        <p style="color:#667; max-width:520px;">
+          ¿Algun problema o duda con el sistema? Envia un mensaje y le va a llegar al administrador.
+        </p>
+        <div style="max-width:420px; margin-bottom:32px;">
+          <form id="form-ayuda">
+            <div class="campo"><label>Asunto</label><input name="asunto" placeholder="Ej: Error al exportar" /></div>
+            <div class="campo"><label>Mensaje</label><textarea name="mensaje" required></textarea></div>
+            <button type="submit" style="width:100%">Enviar mensaje</button>
+          </form>
+        </div>
+        <div id="ayuda-bandeja" class="oculto">
+          <h2>Mensajes recibidos</h2>
+          <div id="ayuda-mensajes"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
