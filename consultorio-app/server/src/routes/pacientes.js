@@ -34,13 +34,22 @@ router.get('/', (req, res) => {
     pacientes = db
       .prepare(
         `SELECT * FROM pacientes
-         WHERE nombre LIKE ? OR apellido LIKE ? OR dni LIKE ?
+         WHERE activo = 1 AND (nombre LIKE ? OR apellido LIKE ? OR dni LIKE ?)
          ORDER BY apellido, nombre LIMIT 200`
       )
       .all(like, like, like);
   } else {
-    pacientes = db.prepare('SELECT * FROM pacientes ORDER BY apellido, nombre LIMIT 200').all();
+    pacientes = db.prepare('SELECT * FROM pacientes WHERE activo = 1 ORDER BY apellido, nombre LIMIT 200').all();
   }
+  res.json(pacientes);
+});
+
+// Papelera: pacientes "eliminados" (activo = 0), para poder restaurarlos.
+// Tiene que ir antes de "/:id" para que Express no lo interprete como un id.
+router.get('/papelera', requirePermiso('pacientes_eliminar'), (req, res) => {
+  const pacientes = db
+    .prepare('SELECT * FROM pacientes WHERE activo = 0 ORDER BY eliminado_en DESC')
+    .all();
   res.json(pacientes);
 });
 
@@ -137,8 +146,30 @@ router.put('/:id', requireRol('admin', 'recepcion', 'doctor', 'enfermera'), (req
   res.json({ ok: true });
 });
 
+// "Eliminar" un paciente lo manda a la papelera (activo = 0): no se borra nada
+// todavia, se puede restaurar despues. El borrado definitivo es otra ruta.
 router.delete('/:id', requirePermiso('pacientes_eliminar'), (req, res) => {
-  const paciente = db.prepare('SELECT foto FROM pacientes WHERE id = ?').get(req.params.id);
+  const paciente = db.prepare('SELECT id FROM pacientes WHERE id = ?').get(req.params.id);
+  if (!paciente) return res.status(404).json({ error: 'Paciente no encontrado' });
+  db.prepare("UPDATE pacientes SET activo = 0, eliminado_en = datetime('now') WHERE id = ?").run(req.params.id);
+  res.json({ ok: true });
+});
+
+router.put('/:id/restaurar', requirePermiso('pacientes_eliminar'), (req, res) => {
+  const paciente = db.prepare('SELECT id FROM pacientes WHERE id = ?').get(req.params.id);
+  if (!paciente) return res.status(404).json({ error: 'Paciente no encontrado' });
+  db.prepare('UPDATE pacientes SET activo = 1, eliminado_en = NULL WHERE id = ?').run(req.params.id);
+  res.json({ ok: true });
+});
+
+// Borrado definitivo (irreversible): solo permitido desde la papelera, para
+// evitar borrar por error un paciente que todavia esta activo.
+router.delete('/:id/definitivo', requirePermiso('pacientes_eliminar'), (req, res) => {
+  const paciente = db.prepare('SELECT foto, activo FROM pacientes WHERE id = ?').get(req.params.id);
+  if (!paciente) return res.status(404).json({ error: 'Paciente no encontrado' });
+  if (paciente.activo) {
+    return res.status(400).json({ error: 'Primero hay que eliminarlo (mandarlo a la papelera)' });
+  }
   borrarFotoSiExiste(paciente);
   db.prepare('DELETE FROM pacientes WHERE id = ?').run(req.params.id);
   res.json({ ok: true });

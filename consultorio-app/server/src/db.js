@@ -172,6 +172,11 @@ agregarColumnaSiFalta('pacientes', 'sexo', 'TEXT');
 agregarColumnaSiFalta('pacientes', 'aseguradora', 'TEXT');
 agregarColumnaSiFalta('pacientes', 'estado_civil', 'TEXT');
 agregarColumnaSiFalta('pacientes', 'foto', 'TEXT');
+// Papelera de pacientes: "eliminar" un paciente lo oculta (activo = 0) en vez
+// de borrarlo, para poder restaurarlo si fue un error. El borrado definitivo
+// (irreversible) es una accion aparte, disponible solo desde la papelera.
+agregarColumnaSiFalta('pacientes', 'activo', 'INTEGER NOT NULL DEFAULT 1');
+agregarColumnaSiFalta('pacientes', 'eliminado_en', 'TEXT');
 agregarColumnaSiFalta('historias_clinicas', 'presion_arterial', 'TEXT');
 agregarColumnaSiFalta('historias_clinicas', 'peso', 'TEXT');
 agregarColumnaSiFalta('historias_clinicas', 'antecedentes_heredo_familiares', 'TEXT');

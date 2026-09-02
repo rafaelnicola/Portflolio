@@ -204,6 +204,15 @@ recepcionista puntual el permiso de cargar historia clínica sin cambiarle el ro
 incluidos por el rol (marcados arriba con ✅ liso) aparecen tildados y bloqueados en esa pantalla — para
 sacarlos hay que cambiar el rol del usuario, no se puede hacer ahí.
 
+### Papelera de pacientes
+
+"Eliminar" un paciente (quien tenga el permiso) no lo borra de una — lo manda a la **Papelera** (botón
+"Papelera" en la pantalla de Pacientes, visible para quien tenga el permiso de eliminar pacientes). Desde ahí
+se puede **restaurar** el paciente (vuelve a aparecer normal, con toda su historia clínica y turnos intactos)
+o **eliminarlo definitivamente** — esto último si borra todo (paciente, turnos e historia clínica) y no se
+puede deshacer. Mientras un paciente está en la papelera, sigue apareciendo con normalidad en turnos e
+historias ya existentes; solo desaparece de la lista de Pacientes y del buscador para agendar turnos nuevos.
+
 ## Foto del paciente
 
 Al crear o editar un paciente (cualquier usuario puede hacerlo), hay dos formas de agregarle una foto:

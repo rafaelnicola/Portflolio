@@ -206,6 +206,7 @@ function iniciarApp() {
   $('#info-rol').textContent = etiquetaRol(usuarioActual.rol);
   $('#nav-usuarios').classList.toggle('oculto', usuarioActual.rol !== 'admin');
   $('#nav-configuracion').classList.toggle('oculto', usuarioActual.rol !== 'admin');
+  $('#btn-papelera-pacientes').classList.toggle('oculto', !usuarioActual.permisos.pacientes_eliminar);
   cambiarVista('dashboard');
   actualizarBadgeAyuda();
   pedirPermisoNotificaciones();
@@ -316,6 +317,7 @@ $('#pacientes-buscar').addEventListener('input', () => {
 });
 
 $('#btn-nuevo-paciente').addEventListener('click', () => abrirFormPaciente());
+$('#btn-papelera-pacientes').addEventListener('click', () => abrirPapelera());
 
 async function cargarPacientes() {
   try {
@@ -370,16 +372,76 @@ function adjuntarEventosPacientes() {
   });
   $$('#pacientes-tabla [data-eliminar-paciente]').forEach((btn) => {
     btn.addEventListener('click', async () => {
-      if (!confirm('¿Eliminar este paciente? Se borran tambien sus turnos e historia clinica.')) return;
+      if (!confirm('¿Eliminar este paciente? Queda en la Papelera y se puede restaurar despues.')) return;
       try {
         await Api.del(`/api/pacientes/${btn.dataset.eliminarPaciente}`);
-        toast('Paciente eliminado', 'exito');
+        toast('Paciente eliminado (se puede restaurar desde la Papelera)', 'exito');
         cargarPacientes();
       } catch (e) {
         toast(e.message, 'error');
       }
     });
   });
+}
+
+async function abrirPapelera() {
+  abrirPanel(`
+    <button class="secundario cerrar" onclick="cerrarPanel()">Cerrar</button>
+    <h2>Papelera de pacientes</h2>
+    <p style="color:#667">
+      Pacientes eliminados. Se pueden restaurar, o borrar definitivamente (esto ultimo ya no se puede deshacer).
+    </p>
+    <div id="papelera-tabla">Cargando...</div>
+  `);
+  await cargarPapelera();
+}
+
+async function cargarPapelera() {
+  try {
+    const pacientes = await Api.get('/api/pacientes/papelera');
+    $('#papelera-tabla').innerHTML = pacientes.length
+      ? `<table><thead><tr><th>Paciente</th><th>DNI</th><th>Eliminado</th><th></th></tr></thead><tbody>${pacientes
+          .map(
+            (p) => `
+        <tr>
+          <td>${escapeHtml(p.apellido)}, ${escapeHtml(p.nombre)}</td>
+          <td>${escapeHtml(p.dni) || '-'}</td>
+          <td>${escapeHtml(formatearFecha(p.eliminado_en))}</td>
+          <td class="acciones">
+            <button class="secundario" data-restaurar-paciente="${p.id}">Restaurar</button>
+            <button class="peligro" data-purgar-paciente="${p.id}">Eliminar definitivamente</button>
+          </td>
+        </tr>`
+          )
+          .join('')}</tbody></table>`
+      : '<div class="vacio">La papelera esta vacia.</div>';
+
+    $$('#papelera-tabla [data-restaurar-paciente]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        try {
+          await Api.put(`/api/pacientes/${btn.dataset.restaurarPaciente}/restaurar`, {});
+          toast('Paciente restaurado', 'exito');
+          cargarPapelera();
+        } catch (e) {
+          toast(e.message, 'error');
+        }
+      });
+    });
+    $$('#papelera-tabla [data-purgar-paciente]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('¿Eliminar definitivamente este paciente? Se borran tambien sus turnos e historia clinica, y NO se puede deshacer.')) return;
+        try {
+          await Api.del(`/api/pacientes/${btn.dataset.purgarPaciente}/definitivo`);
+          toast('Paciente eliminado definitivamente', 'exito');
+          cargarPapelera();
+        } catch (e) {
+          toast(e.message, 'error');
+        }
+      });
+    });
+  } catch (e) {
+    toast(e.message, 'error');
+  }
 }
 
 function abrirFormPaciente(paciente) {
