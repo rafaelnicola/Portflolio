@@ -358,6 +358,7 @@ function renderTablaPacientes(pacientes) {
         <td>${escapeHtml(p.obra_social) || '-'}</td>
         <td class="acciones">
           <button class="secundario" data-ver="${p.id}">Ver ficha</button>
+          <button class="secundario" data-agendar-paciente="${p.id}" data-agendar-apellido="${escapeHtml(p.apellido)}" data-agendar-nombre="${escapeHtml(p.nombre)}">Agendar</button>
           ${puedeEliminar ? `<button class="peligro" data-eliminar-paciente="${p.id}">Eliminar</button>` : ''}
         </td>
       </tr>`
@@ -369,6 +370,15 @@ function renderTablaPacientes(pacientes) {
 function adjuntarEventosPacientes() {
   $$('#pacientes-tabla [data-ver]').forEach((btn) => {
     btn.addEventListener('click', () => abrirFichaPaciente(btn.dataset.ver));
+  });
+  $$('#pacientes-tabla [data-agendar-paciente]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      abrirFormTurno(null, {
+        id: btn.dataset.agendarPaciente,
+        apellido: btn.dataset.agendarApellido,
+        nombre: btn.dataset.agendarNombre,
+      });
+    });
   });
   $$('#pacientes-tabla [data-eliminar-paciente]').forEach((btn) => {
     btn.addEventListener('click', async () => {
@@ -1097,7 +1107,7 @@ function adjuntarEventosTurnos() {
   });
 }
 
-function configurarBuscadorPaciente({ inputBuscar, inputId, resultadosDiv }) {
+function configurarBuscadorPaciente({ inputBuscar, inputId, resultadosDiv, onSeleccion }) {
   let debounceId = null;
 
   function ocultarResultados() {
@@ -1143,6 +1153,7 @@ function configurarBuscadorPaciente({ inputBuscar, inputId, resultadosDiv }) {
     inputId.value = item.dataset.id;
     inputBuscar.value = item.dataset.nombre;
     ocultarResultados();
+    if (onSeleccion) onSeleccion(item.dataset.id);
   });
 
   inputBuscar.addEventListener('blur', () => {
@@ -1206,7 +1217,41 @@ function configurarBuscadorCie10({ inputBuscar, resultadosDiv, textareaDestino }
   });
 }
 
-async function abrirFormTurno(turno) {
+// Muestra si el paciente ya tiene un turno agendado a futuro, para no
+// duplicar una cita sin darse cuenta. excluirTurnoId se usa al editar, para
+// no contar el turno que se esta editando como si fuera "otro" turno.
+async function mostrarProximaCita(pacienteId, excluirTurnoId) {
+  const div = $('#turno-proxima-cita');
+  if (!div) return;
+  if (!pacienteId) {
+    div.classList.add('oculto');
+    div.innerHTML = '';
+    return;
+  }
+  try {
+    const turnos = await Api.get(`/api/turnos?paciente_id=${pacienteId}`);
+    const hoy = fechaHoy();
+    const futuros = turnos
+      .filter((t) => t.fecha >= hoy && t.estado !== 'cancelado' && String(t.id) !== String(excluirTurnoId))
+      .sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
+    if (futuros.length) {
+      const t = futuros[0];
+      div.style.cssText = 'background:#fff3cd; color:#8a6816; padding:8px 12px; border-radius:6px; margin:-4px 0 12px; font-size:13px;';
+      div.innerHTML = `Ya tiene un turno agendado: <strong>${escapeHtml(t.fecha)} ${escapeHtml(t.hora)}</strong>${t.motivo ? ` — ${escapeHtml(t.motivo)}` : ''}`;
+    } else {
+      div.style.cssText = 'background:#eef2f5; color:#667; padding:8px 12px; border-radius:6px; margin:-4px 0 12px; font-size:13px;';
+      div.innerHTML = 'Sin turnos proximos agendados.';
+    }
+    div.classList.remove('oculto');
+  } catch (e) {
+    div.classList.add('oculto');
+  }
+}
+
+// pacientePredefinido (opcional): { id, apellido, nombre } para abrir el
+// formulario con el paciente ya elegido, por ejemplo desde el boton
+// "Agendar" en la pantalla de Pacientes.
+async function abrirFormTurno(turno, pacientePredefinido) {
   const esEdicion = !!turno;
   if (!doctoresCache.length) {
     try {
@@ -1215,7 +1260,12 @@ async function abrirFormTurno(turno) {
       doctoresCache = [];
     }
   }
-  const nombrePacienteInicial = turno ? `${turno.paciente_apellido}, ${turno.paciente_nombre}` : '';
+  const nombrePacienteInicial = turno
+    ? `${turno.paciente_apellido}, ${turno.paciente_nombre}`
+    : pacientePredefinido
+      ? `${pacientePredefinido.apellido}, ${pacientePredefinido.nombre}`
+      : '';
+  const pacienteIdInicial = turno ? turno.paciente_id : pacientePredefinido ? pacientePredefinido.id : '';
 
   abrirPanel(`
     <button class="secundario cerrar" onclick="cerrarPanel()">Cerrar</button>
@@ -1224,9 +1274,10 @@ async function abrirFormTurno(turno) {
       <div class="campo buscador-paciente">
         <label>Paciente</label>
         <input type="text" id="turno-buscar-paciente" autocomplete="off" placeholder="Escribi nombre, apellido o DNI..." value="${escapeHtml(nombrePacienteInicial)}" required />
-        <input type="hidden" name="paciente_id" id="turno-paciente-id" value="${turno ? turno.paciente_id : ''}" />
+        <input type="hidden" name="paciente_id" id="turno-paciente-id" value="${pacienteIdInicial}" />
         <div id="turno-resultados-paciente" class="resultados-buscador oculto"></div>
       </div>
+      <div id="turno-proxima-cita" class="oculto"></div>
       <div class="campo">
         <label>Doctor/a</label>
         <select name="doctor_id">
@@ -1252,7 +1303,12 @@ async function abrirFormTurno(turno) {
     inputBuscar: $('#turno-buscar-paciente'),
     inputId: $('#turno-paciente-id'),
     resultadosDiv: $('#turno-resultados-paciente'),
+    onSeleccion: (id) => mostrarProximaCita(id),
   });
+
+  if (pacienteIdInicial) {
+    mostrarProximaCita(pacienteIdInicial, esEdicion ? turno.id : null);
+  }
 
   $('#form-turno').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -1274,6 +1330,7 @@ async function abrirFormTurno(turno) {
         // sesiones del mismo paciente sin tener que volver a llenar el formulario.
         const inputFecha = document.querySelector('#form-turno [name="fecha"]');
         if (inputFecha) inputFecha.focus();
+        mostrarProximaCita($('#turno-paciente-id').value);
       }
       cargarTurnos();
     } catch (err) {

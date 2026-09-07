@@ -175,6 +175,11 @@ lista desplegable — pensado para consultorios con muchos pacientes registrados
 quién agendó cada turno y cuándo — ese dato no se puede modificar (ni siquiera el admin) y no aparece en la
 lista descargada en Word, solo en la pantalla.
 
+Desde **Pacientes** hay un botón **Agendar** en cada fila que abre directo el formulario de "Nuevo turno"
+con ese paciente ya elegido, sin tener que ir a la Agenda y volver a buscarlo. Además, apenas se elige un
+paciente (ya sea por este botón o buscándolo a mano) el formulario avisa si esa persona **ya tiene un turno
+agendado a futuro** (fecha, hora y motivo), para no cargar una cita duplicada sin darse cuenta.
+
 Al crear un turno nuevo, el panel **no se cierra** después de guardar — queda abierto con los mismos datos
 (paciente, doctor/a, motivo) para poder agendar varias sesiones del mismo paciente en distintas fechas sin
 volver a llenar el formulario cada vez: solo hay que cambiar la fecha (y la hora si corresponde) y volver a
