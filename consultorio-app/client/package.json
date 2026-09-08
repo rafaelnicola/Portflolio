@@ -1,0 +1,37 @@
+{
+  "name": "consultorio-cliente",
+  "version": "1.0.0",
+  "description": "Cliente de escritorio para el sistema de gestion del consultorio",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0"
+  },
+  "devDependencies": {
+    "electron": "^31.3.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.biomedicalcenter.cliente",
+    "productName": "Biomedical Center",
+    "icon": "build/icon.png",
+    "publish": null,
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "mac": {
+      "target": "dmg"
+    }
+  }
+}

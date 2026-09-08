@@ -1,0 +1,37 @@
+{
+  "name": "consultorio-cliente-legacy",
+  "version": "1.0.0",
+  "description": "Cliente de escritorio para el sistema de gestion del consultorio (version compatible con Windows 7/8/8.1)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0"
+  },
+  "devDependencies": {
+    "electron": "22.3.27",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.biomedicalcenter.cliente.legacy",
+    "productName": "Biomedical Center",
+    "icon": "build/icon.png",
+    "publish": null,
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "mac": {
+      "target": "dmg"
+    }
+  }
+}

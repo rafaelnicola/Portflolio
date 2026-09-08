@@ -1,0 +1,22 @@
+{
+  "name": "consultorio-server",
+  "version": "1.0.0",
+  "description": "Servidor local para el sistema de gestion del consultorio",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "archiver": "^8.0.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "docx": "^9.7.1",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^9.0.5",
+    "pdfkit": "^0.19.1"
+  }
+}
