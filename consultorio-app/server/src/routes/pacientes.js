@@ -26,8 +26,14 @@ function borrarFotoSiExiste(paciente) {
   if (fs.existsSync(archivo)) fs.unlinkSync(archivo);
 }
 
+// Lista paginada: siempre trae de a PAGINA pacientes por vez (para no cargar
+// miles de golpe), y el cliente pide la pagina siguiente con "offset" cuando
+// hace falta ("Cargar mas pacientes").
+const PAGINA_PACIENTES = 200;
+
 router.get('/', (req, res) => {
   const { q } = req.query;
+  const offset = Math.max(0, Number(req.query.offset) || 0);
   let pacientes;
   if (q) {
     const like = `%${q}%`;
@@ -35,11 +41,13 @@ router.get('/', (req, res) => {
       .prepare(
         `SELECT * FROM pacientes
          WHERE activo = 1 AND (nombre LIKE ? OR apellido LIKE ? OR dni LIKE ?)
-         ORDER BY apellido, nombre LIMIT 200`
+         ORDER BY apellido, nombre LIMIT ? OFFSET ?`
       )
-      .all(like, like, like);
+      .all(like, like, like, PAGINA_PACIENTES, offset);
   } else {
-    pacientes = db.prepare('SELECT * FROM pacientes WHERE activo = 1 ORDER BY apellido, nombre LIMIT 200').all();
+    pacientes = db
+      .prepare('SELECT * FROM pacientes WHERE activo = 1 ORDER BY apellido, nombre LIMIT ? OFFSET ?')
+      .all(PAGINA_PACIENTES, offset);
   }
   res.json(pacientes);
 });

@@ -322,16 +322,49 @@ $('#pacientes-buscar').addEventListener('input', () => {
 $('#btn-nuevo-paciente').addEventListener('click', () => abrirFormPaciente());
 $('#btn-papelera-pacientes').addEventListener('click', () => abrirPapelera());
 
+// La lista de pacientes se trae de a paginas (ver PAGINA_PACIENTES en el
+// servidor) para no cargar miles de golpe. pacientesAcumulados guarda lo ya
+// traido para poder seguir agregando con "Cargar mas pacientes".
+const PAGINA_PACIENTES = 200;
+let pacientesAcumulados = [];
+let pacientesConsultaActual = '';
+
 async function cargarPacientes() {
   try {
     const q = $('#pacientes-buscar').value.trim();
-    const pacientes = await Api.get(`/api/pacientes${q ? `?q=${encodeURIComponent(q)}` : ''}`);
-    $('#pacientes-tabla').innerHTML = renderTablaPacientes(pacientes);
-    adjuntarEventosPacientes();
-    cargarAvataresPacientes(pacientes);
+    pacientesConsultaActual = q;
+    const pacientes = await Api.get(`/api/pacientes?offset=0${q ? `&q=${encodeURIComponent(q)}` : ''}`);
+    pacientesAcumulados = pacientes;
+    renderizarListaPacientes(pacientes);
   } catch (e) {
     toast(e.message, 'error');
   }
+}
+
+async function cargarMasPacientes() {
+  try {
+    const q = pacientesConsultaActual;
+    const siguientes = await Api.get(
+      `/api/pacientes?offset=${pacientesAcumulados.length}${q ? `&q=${encodeURIComponent(q)}` : ''}`
+    );
+    pacientesAcumulados = pacientesAcumulados.concat(siguientes);
+    renderizarListaPacientes(siguientes);
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+function renderizarListaPacientes(paginaRecienCargada) {
+  const hayMas = paginaRecienCargada.length === PAGINA_PACIENTES;
+  $('#pacientes-tabla').innerHTML =
+    renderTablaPacientes(pacientesAcumulados) +
+    (hayMas
+      ? '<div style="text-align:center; margin-top:14px;"><button class="secundario" id="btn-cargar-mas-pacientes">Cargar mas pacientes</button></div>'
+      : '');
+  adjuntarEventosPacientes();
+  cargarAvataresPacientes(paginaRecienCargada);
+  const btnMas = $('#btn-cargar-mas-pacientes');
+  if (btnMas) btnMas.addEventListener('click', cargarMasPacientes);
 }
 
 function cargarAvataresPacientes(pacientes) {
