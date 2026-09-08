@@ -270,9 +270,12 @@ async function cargarDashboard() {
     if (doctorId) query += `&doctor_id=${doctorId}`;
     if (motivo) query += `&motivo=${encodeURIComponent(motivo)}`;
     if (paciente) query += `&paciente=${encodeURIComponent(paciente)}`;
-    const [turnos, pacientes] = await Promise.all([Api.get(`/api/turnos?${query}`), Api.get('/api/pacientes')]);
+    const [turnos, { total }] = await Promise.all([
+      Api.get(`/api/turnos?${query}`),
+      Api.get('/api/pacientes/cantidad'),
+    ]);
     $('#dash-turnos-hoy').textContent = turnos.length;
-    $('#dash-pacientes').textContent = pacientes.length;
+    $('#dash-pacientes').textContent = total;
     $('#dash-tabla-turnos').innerHTML = renderTablaTurnos(turnos, { compacto: true });
     adjuntarEventosTurnos();
   } catch (e) {

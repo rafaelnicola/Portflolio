@@ -44,6 +44,15 @@ router.get('/', (req, res) => {
   res.json(pacientes);
 });
 
+// Cantidad total de pacientes activos, para el numero de "Pacientes
+// registrados" en Inicio. No se puede sacar de GET "/" porque esa lista
+// tiene un limite de 200 resultados (para no traer miles de filas de una).
+// Tiene que ir antes de "/:id" para que Express no lo interprete como un id.
+router.get('/cantidad', (req, res) => {
+  const { n } = db.prepare('SELECT COUNT(*) AS n FROM pacientes WHERE activo = 1').get();
+  res.json({ total: n });
+});
+
 // Papelera: pacientes "eliminados" (activo = 0), para poder restaurarlos.
 // Tiene que ir antes de "/:id" para que Express no lo interprete como un id.
 router.get('/papelera', requirePermiso('pacientes_eliminar'), (req, res) => {
